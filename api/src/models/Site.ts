@@ -37,7 +37,12 @@ const siteSchema = new Schema<SiteDoc>(
 // Slug is globally addressable for serving published sites (/s/:slug), so it is
 // globally unique. (workspace is indexed above for listing a workspace's sites.)
 siteSchema.index({ slug: 1 }, { unique: true });
-// Custom domain is globally unique when set (sparse — many sites have none).
-siteSchema.index({ customDomain: 1 }, { unique: true, sparse: true });
+// Custom domain is globally unique only when actually set. A partial filter on
+// string values is required: the field defaults to `null`, so a plain
+// unique+sparse index would treat every domain-less site's null as a collision.
+siteSchema.index(
+  { customDomain: 1 },
+  { unique: true, partialFilterExpression: { customDomain: { $type: "string" } } },
+);
 
 export const Site = model<SiteDoc>("Site", siteSchema);

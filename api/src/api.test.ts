@@ -422,6 +422,19 @@ describe("WebForge API end-to-end (Phase 1)", () => {
 
   /* ------------------- Phase 5: export + custom domains ----------------- */
 
+  it("allows multiple sites without a custom domain (no null-index collision)", async () => {
+    const second = await api(`/api/workspaces/${state.workspaceId}/sites`, {
+      method: "POST",
+      body: JSON.stringify({ name: "Second Site" }),
+    });
+    expect(second.status).toBe(201);
+    const third = await api(`/api/workspaces/${state.workspaceId}/sites`, {
+      method: "POST",
+      body: JSON.stringify({ name: "Third Site" }),
+    });
+    expect(third.status).toBe(201);
+  });
+
   it("exports the site as a static HTML ZIP", async () => {
     const res = await api(`/api/sites/${state.siteId}/export`);
     expect(res.status).toBe(200);
