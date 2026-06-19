@@ -33,11 +33,14 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
 }
+export type UserRole = "user" | "superadmin";
+
 export interface UserDTO {
   id: string;
   name: string;
   email: string;
   plan: "free" | "pro" | "business";
+  role: UserRole;
 }
 export interface WorkspaceDTO {
   id: string;
@@ -336,4 +339,45 @@ export interface Paginated<T> {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+/* ----------------------------- platform admin ----------------------------- */
+
+export interface AdminStats {
+  users: number;
+  workspaces: number;
+  sites: number;
+  pages: number;
+  products: number;
+  orders: number;
+  events: number;
+  submissions: number;
+}
+
+export interface AdminUserRow {
+  id: string;
+  name: string;
+  email: string;
+  plan: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface AdminWorkspaceRow {
+  id: string;
+  name: string;
+  slug: string;
+  ownerEmail: string | null;
+  siteCount: number;
+  createdAt: string;
+}
+
+export interface AdminSiteRow {
+  id: string;
+  name: string;
+  slug: string;
+  status: "draft" | "published";
+  customDomain: string | null;
+  workspace: string;
+  createdAt: string;
 }

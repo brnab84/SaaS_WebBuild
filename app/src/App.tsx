@@ -5,6 +5,7 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { EditorPage } from "./pages/EditorPage.js";
 import { StorePage } from "./pages/StorePage.js";
 import { EventsPage } from "./pages/EventsPage.js";
+import { AdminPage } from "./pages/AdminPage.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -53,6 +54,14 @@ export function App() {
         element={
           <RequireAuth>
             <EventsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth>
+            <AdminPage />
           </RequireAuth>
         }
       />

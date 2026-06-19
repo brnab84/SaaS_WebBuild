@@ -4,6 +4,7 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 import type { PageDTO } from "@webforge/shared";
 import { createApp } from "./app.js";
 import { connectDB, disconnectDB } from "./db/connect.js";
+import { User } from "./models/User.js";
 
 let mongo: MongoMemoryServer;
 let server: Server;
@@ -448,5 +449,33 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     // An unknown domain falls through to the normal app (not the site).
     const unknown = await rawGet("/", "nobody.example.com");
     expect(unknown.body).not.toContain("Hello QA");
+  });
+
+  /* ------------------------ Platform admin (owner) --------------------- */
+
+  it("denies the admin API to a normal user", async () => {
+    const res = await api("/api/admin/stats");
+    expect(res.status).toBe(403);
+  });
+
+  it("grants the admin API to a super-admin (cross-tenant view)", async () => {
+    // Promote the current user (registered as ada@example.com) to super-admin.
+    await User.updateOne({ email: "ada@example.com" }, { role: "superadmin" });
+
+    const stats = await json<{ users: number; sites: number; workspaces: number }>(
+      await api("/api/admin/stats"),
+    );
+    expect(stats.users).toBeGreaterThanOrEqual(1);
+    expect(stats.workspaces).toBeGreaterThanOrEqual(1);
+
+    const users = await json<{ items: { email: string; role: string }[] }>(
+      await api("/api/admin/users"),
+    );
+    expect(users.items.some((u) => u.email === "ada@example.com" && u.role === "superadmin")).toBe(
+      true,
+    );
+
+    const sites = await json<{ items: { slug: string }[] }>(await api("/api/admin/sites"));
+    expect(sites.items.some((s) => s.slug === state.siteSlug)).toBe(true);
   });
 });

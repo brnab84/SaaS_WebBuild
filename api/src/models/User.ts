@@ -9,6 +9,8 @@ export interface UserDoc {
   email: string;
   passwordHash: string;
   plan: "free" | "pro" | "business";
+  /** Platform role. `superadmin` is granted to SUPER_ADMIN_EMAIL on register/login. */
+  role: "user" | "superadmin";
   /** Bumped to invalidate all outstanding refresh tokens ("log out everywhere"). */
   tokenVersion: number;
   createdAt: Date;
@@ -29,6 +31,7 @@ const userSchema = new Schema<UserDoc>(
     },
     passwordHash: { type: String, required: true },
     plan: { type: String, enum: ["free", "pro", "business"], default: "free" },
+    role: { type: String, enum: ["user", "superadmin"], default: "user", index: true },
     tokenVersion: { type: Number, default: 0 },
   },
   baseSchemaOptions(["passwordHash", "tokenVersion"]),

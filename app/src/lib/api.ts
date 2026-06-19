@@ -1,4 +1,8 @@
 import type {
+  AdminSiteRow,
+  AdminStats,
+  AdminUserRow,
+  AdminWorkspaceRow,
   AssetDTO,
   AuthResponse,
   BrandKit,
@@ -194,6 +198,16 @@ export const storefrontApi = {
       method: "POST",
       body: input,
     }),
+};
+
+/* -------------------------------- admin ----------------------------------- */
+export const adminApi = {
+  stats: () => request<AdminStats>("/api/admin/stats"),
+  users: (page = 1) => request<Paginated<AdminUserRow>>(`/api/admin/users?page=${page}&limit=100`),
+  workspaces: (page = 1) =>
+    request<Paginated<AdminWorkspaceRow>>(`/api/admin/workspaces?page=${page}&limit=100`),
+  sites: (page = 1) => request<Paginated<AdminSiteRow>>(`/api/admin/sites?page=${page}&limit=100`),
+  deleteSite: (id: string) => request<void>(`/api/admin/sites/${id}`, { method: "DELETE" }),
 };
 
 /* ------------------------------- brandkit --------------------------------- */

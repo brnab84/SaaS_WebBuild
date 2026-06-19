@@ -79,6 +79,14 @@ export function DashboardPage() {
             >
               Events
             </button>
+            {user?.role === "superadmin" && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="font-semibold text-violet-600 hover:text-violet-800"
+              >
+                Admin
+              </button>
+            )}
             <span className="text-slate-300">·</span>
             <span className="text-slate-500">{user?.email}</span>
             <button onClick={logout} className="font-medium text-slate-600 hover:text-slate-900">

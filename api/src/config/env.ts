@@ -21,6 +21,9 @@ const envSchema = z.object({
   JWT_ACCESS_TTL: z.string().default("15m"),
   JWT_REFRESH_TTL: z.string().default("30d"),
 
+  // Email granted platform super-admin on register/login (the product owner).
+  SUPER_ADMIN_EMAIL: z.string().email().optional(),
+
   STORAGE_DRIVER: z.enum(["local", "r2"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./data/storage"),
   STORAGE_PUBLIC_PATH: z.string().default("/uploads"),

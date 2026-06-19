@@ -8,6 +8,7 @@ import {
   type UserDTO,
   type WorkspaceDTO,
 } from "@webforge/shared";
+import { env } from "../config/env.js";
 import { BrandKit } from "../models/BrandKit.js";
 import { User, type UserDoc } from "../models/User.js";
 import { Workspace, type WorkspaceDoc } from "../models/Workspace.js";
@@ -22,7 +23,12 @@ import {
 const BCRYPT_ROUNDS = 12;
 
 function toUserDTO(u: UserDoc): UserDTO {
-  return { id: u._id.toString(), name: u.name, email: u.email, plan: u.plan };
+  return { id: u._id.toString(), name: u.name, email: u.email, plan: u.plan, role: u.role };
+}
+
+/** Is this the configured product-owner email? */
+function isSuperAdminEmail(email: string): boolean {
+  return !!env.SUPER_ADMIN_EMAIL && email === env.SUPER_ADMIN_EMAIL.toLowerCase();
 }
 function toWorkspaceDTO(w: WorkspaceDoc): WorkspaceDTO {
   return { id: w._id.toString(), name: w.name, slug: w.slug };
@@ -47,7 +53,12 @@ export async function register(input: RegisterInput): Promise<AuthResponse> {
   if (await User.exists({ email })) throw conflict("Email already registered");
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-  const user = await User.create({ name: input.name, email, passwordHash });
+  const user = await User.create({
+    name: input.name,
+    email,
+    passwordHash,
+    role: isSuperAdminEmail(email) ? "superadmin" : "user",
+  });
 
   const wsName = input.workspaceName?.trim() || `${input.name}'s workspace`;
   const slug = await uniqueWorkspaceSlug(wsName);
@@ -78,6 +89,12 @@ export async function login(input: LoginInput): Promise<AuthResponse> {
 
   const ok = await bcrypt.compare(input.password, user.passwordHash);
   if (!ok) throw unauthorized("Invalid email or password");
+
+  // Promote the product owner on login (covers accounts created before the env was set).
+  if (isSuperAdminEmail(user.email) && user.role !== "superadmin") {
+    user.role = "superadmin";
+    await user.save();
+  }
 
   const workspace = await Workspace.findOne({ "members.user": user._id }).sort({ createdAt: 1 });
   if (!workspace) throw badRequest("User has no workspace");
