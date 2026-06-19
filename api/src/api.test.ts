@@ -27,6 +27,9 @@ async function api(path: string, init: RequestInit = {}) {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
+// undici's Response.json() returns `unknown`; this keeps assertions ergonomic.
+const json = <T = Record<string, any>>(res: Response): Promise<T> => res.json() as Promise<T>;
+
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
   await connectDB(mongo.getUri());
@@ -49,7 +52,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
   it("reports health", async () => {
     const res = await api("/api/health");
     expect(res.status).toBe(200);
-    expect((await res.json()).status).toBe("ok");
+    expect((await json(res)).status).toBe("ok");
   });
 
   it("registers a user and provisions a workspace + brandkit", async () => {
@@ -63,7 +66,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
       }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await json(res);
     expect(body.tokens.accessToken).toBeTruthy();
     expect(body.workspace.slug).toBe("ada-studio");
     state.accessToken = body.tokens.accessToken;
@@ -92,13 +95,13 @@ describe("WebForge API end-to-end (Phase 1)", () => {
       body: JSON.stringify({ name: "My Launch" }),
     });
     expect(res.status).toBe(201);
-    const site = await res.json();
+    const site = await json(res);
     expect(site.status).toBe("draft");
     state.siteId = site.id;
     state.siteSlug = site.slug;
 
     const pagesRes = await api(`/api/sites/${state.siteId}/pages`);
-    const pages: PageDTO[] = await pagesRes.json();
+    const pages = await json<PageDTO[]>(pagesRes);
     expect(pages.length).toBe(1);
     expect(pages[0]!.isHome).toBe(true);
     state.homePageId = pages[0]!.id;
@@ -106,7 +109,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
 
   it("autosaves an edited block tree", async () => {
     const pageRes = await api(`/api/pages/${state.homePageId}`);
-    const page: PageDTO = await pageRes.json();
+    const page = await json<PageDTO>(pageRes);
     // Edit the hero title inside the starter tree.
     const tree = page.tree as { children: { type: string; props: Record<string, unknown> }[] };
     const hero = tree.children.find((c) => c.type === "hero");
@@ -118,7 +121,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
       body: JSON.stringify({ tree: page.tree }),
     });
     expect(res.status).toBe(200);
-    const saved: PageDTO = await res.json();
+    const saved = await json<PageDTO>(res);
     const savedTree = saved.tree as { children: { type: string; props: { title?: string } }[] };
     expect(savedTree.children.find((c) => c.type === "hero")!.props.title).toBe("Hello QA");
   });
@@ -142,7 +145,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
   it("publishes the site and serves it publicly", async () => {
     const res = await api(`/api/sites/${state.siteId}/publish`, { method: "POST" });
     expect(res.status).toBe(200);
-    const result = await res.json();
+    const result = await json(res);
     expect(result.pages).toBeGreaterThanOrEqual(1);
     expect(result.site.status).toBe("published");
 
@@ -154,7 +157,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
   it("unpublishes the site (public serving returns 404)", async () => {
     const res = await api(`/api/sites/${state.siteId}/unpublish`, { method: "POST" });
     expect(res.status).toBe(200);
-    expect((await res.json()).status).toBe("draft");
+    expect((await json(res)).status).toBe("draft");
 
     const served = await fetch(`${baseUrl}/s/${state.siteSlug}`);
     expect(served.status).toBe(404);

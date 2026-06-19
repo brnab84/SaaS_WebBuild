@@ -173,9 +173,9 @@ const PROP_DEFAULTS: { [K in BlockType]: z.ZodTypeAny } = {
 };
 
 /** Create a new block of `type` with schema-default props and a fresh id. */
-export function makeBlock(type: BlockType): Block {
+export function makeBlock<T extends BlockType>(type: T): Extract<Block, { type: T }> {
   const props = PROP_DEFAULTS[type].parse({});
-  return { id: uuid(), type, props, children: [] } as Block;
+  return { id: uuid(), type, props, children: [] } as unknown as Extract<Block, { type: T }>;
 }
 
 /** A starter page tree for newly created pages. */
