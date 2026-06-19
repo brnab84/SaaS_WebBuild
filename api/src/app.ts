@@ -53,7 +53,13 @@ export function createApp(): express.Express {
   if (existsSync(appDist)) {
     app.use(express.static(appDist));
     app.get("*", (req, res, next) => {
-      if (req.path.startsWith("/api") || req.path.startsWith("/s")) return next();
+      if (
+        req.path.startsWith("/api") ||
+        req.path.startsWith("/s") ||
+        req.path.startsWith("/uploads")
+      ) {
+        return next();
+      }
       res.sendFile(resolve(appDist, "index.html"));
     });
   } else {

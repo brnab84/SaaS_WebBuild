@@ -23,7 +23,7 @@ const envSchema = z.object({
 
   STORAGE_DRIVER: z.enum(["local", "r2"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./data/storage"),
-  STORAGE_PUBLIC_PATH: z.string().default("/assets"),
+  STORAGE_PUBLIC_PATH: z.string().default("/uploads"),
 
   PUBLISH_DRIVER: z.enum(["local", "cloudflare-pages"]).default("local"),
   PUBLISH_LOCAL_DIR: z.string().default("./data/published"),
