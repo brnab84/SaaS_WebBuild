@@ -63,8 +63,8 @@ Per-package typecheck: `npm run typecheck --workspace @webforge/<pkg>` (or `npx 
 
 ## Phasing
 
-Phases 1 (MVP), 2 (AI generation + logo maker), 3 (e-commerce) and 4 (events + RSVP +
-forms) are implemented.
+All five phases are implemented: 1 (MVP), 2 (AI generation + logo maker), 3 (e-commerce),
+4 (events + RSVP + forms) and 5 (productive publishing + code export).
 
 - **AI** lives in `api/src/services/ai/` — Claude returns a **flat** plan via forced
   `tool_use` (structured outputs needs zod v4; we're on v3, so tool_use keeps it
@@ -78,7 +78,10 @@ forms) are implemented.
 - **Events** (`api/src/services/event.service.ts`, `form.service.ts`): event CRUD,
   public RSVP (de-duped by email, capacity-enforced) and a generic `FormSubmission`
   capture. Public endpoints live under `/api/storefront`.
+- **Publishing/export** (`api/src/services/export.service.ts`, `services/r2-client.ts`,
+  `storage/R2StorageService.ts`, `publish/R2PublishService.ts`): static-HTML ZIP export,
+  `Site.customDomain` served by Host header, and Cloudflare R2 drivers (S3-compatible)
+  selected by `STORAGE_DRIVER`/`PUBLISH_DRIVER=r2`.
 
-Phase 5 (productive publishing/export) is the only remaining phase — keep it
-**architecture-only** (the publish/storage seams already exist); don't implement that
-logic unless asked.
+There are no further planned phases — the product is feature-complete per the original
+brief. New work is enhancement/maintenance.

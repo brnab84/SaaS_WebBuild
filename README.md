@@ -193,6 +193,7 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 | `GET/POST` | `/api/workspaces/:id/events` · `/api/events/:id` | Event CRUD |
 | `POST` | `/api/storefront/events/:eventId/rsvp` | **Public** RSVP (capacity-enforced) |
 | `POST` | `/api/storefront/:siteId/forms/:name` | **Public** form submission |
+| `GET` | `/api/sites/:id/export` | Download a static HTML/CSS ZIP (no lock-in) |
 | `GET` | `/s/:siteSlug[/:pageSlug]` | **Public** published site (no auth) |
 
 ---
@@ -212,5 +213,9 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 - **Phase 4 (done):** events + RSVP + forms — event CRUD, public RSVP with
   de-dup and capacity enforcement, and generic form-submission capture (contact /
   lead forms) with an admin inbox. Managed from the editor's Events page.
-- **Phase 5:** productive publishing (Cloudflare Pages + R2, custom domains + SSL),
-  real code export.
+- **Phase 5 (done):** productive publishing & export — one-click **code export**
+  (self-contained static HTML/CSS ZIP, no lock-in), **custom domains** (served by
+  Host header; SSL at the edge in prod), and **Cloudflare R2** drivers for both
+  storage and publishing (`STORAGE_DRIVER`/`PUBLISH_DRIVER=r2`).
+
+**All five phases are implemented.**
