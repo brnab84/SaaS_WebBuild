@@ -167,6 +167,9 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 - Set env vars in Railway (see `.env.example`): `MONGODB_URI` (Atlas), `JWT_*` secrets,
   `PUBLIC_URL` (your Railway URL), `APP_ORIGIN`.
 
+**Step-by-step deploy guide: [DEPLOY.md](DEPLOY.md)** (MongoDB setup, env vars, secrets,
+custom domains, and the optional AI/payments/R2 integrations).
+
 ---
 
 ## API overview
