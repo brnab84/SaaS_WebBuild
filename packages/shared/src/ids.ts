@@ -1,0 +1,11 @@
+/** Cross-runtime UUID (browser + Node 20+ both expose globalThis.crypto). */
+export function uuid(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  // Extremely defensive fallback; should not be reached on supported runtimes.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0;
+    const v = ch === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}

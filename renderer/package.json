@@ -1,0 +1,19 @@
+{
+  "name": "@webforge/renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic engine that serializes a block JSON tree into static HTML + CSS.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@webforge/shared": "*"
+  }
+}
