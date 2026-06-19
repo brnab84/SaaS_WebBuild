@@ -100,11 +100,16 @@ export const createPageSchema = z.object({
 });
 export type CreatePageInput = z.infer<typeof createPageSchema>;
 
-/** Autosave payload — the editor PATCHes the full page tree (debounced 1.5s). */
-export const savePageSchema = z.object({
-  title: z.string().min(1).max(140).optional(),
-  tree: blockSchema,
-});
+/**
+ * Page update payload. Autosave PATCHes the full `tree` (debounced 1.5s); a
+ * rename PATCHes only `title`. At least one field is required.
+ */
+export const savePageSchema = z
+  .object({
+    title: z.string().min(1).max(140).optional(),
+    tree: blockSchema.optional(),
+  })
+  .refine((v) => v.title !== undefined || v.tree !== undefined, "Nothing to update");
 export type SavePageInput = z.infer<typeof savePageSchema>;
 
 export interface PageDTO {

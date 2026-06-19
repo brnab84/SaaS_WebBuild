@@ -198,4 +198,31 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("creates, renames (title only) and deletes a secondary page; home is protected", async () => {
+    const created = await json<PageDTO>(
+      await api(`/api/sites/${state.siteId}/pages`, {
+        method: "POST",
+        body: JSON.stringify({ title: "About" }),
+      }),
+    );
+    expect(created.title).toBe("About");
+    expect(created.isHome).toBe(false);
+
+    // Rename with title only (no tree) — exercises the optional-tree PATCH path.
+    const renamed = await json<PageDTO>(
+      await api(`/api/pages/${created.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: "About us" }),
+      }),
+    );
+    expect(renamed.title).toBe("About us");
+
+    const del = await api(`/api/pages/${created.id}`, { method: "DELETE" });
+    expect(del.status).toBe(204);
+
+    // The home page cannot be deleted.
+    const delHome = await api(`/api/pages/${state.homePageId}`, { method: "DELETE" });
+    expect(delHome.status).toBe(403);
+  });
 });

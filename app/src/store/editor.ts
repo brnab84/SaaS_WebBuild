@@ -33,6 +33,8 @@ interface EditorState {
   loadEditor: (siteId: string) => Promise<void>;
   openPage: (pageId: string) => Promise<void>;
   addPage: (title: string) => Promise<void>;
+  renamePage: (pageId: string, title: string) => Promise<void>;
+  removePage: (pageId: string) => Promise<void>;
   select: (id: string | null) => void;
   addBlock: (type: BlockType, parentId?: string, index?: number) => void;
   moveBlock: (id: string, toParentId: string, toIndex: number) => void;
@@ -130,6 +132,25 @@ export const useEditorStore = create<EditorState>((set, get) => {
       const created = await pageApi.create(site.id, { title });
       set({ pages: [...get().pages, created] });
       await get().openPage(created.id);
+    },
+
+    async renamePage(pageId, title) {
+      const updated = await pageApi.save(pageId, { title });
+      const cur = get().page;
+      set({
+        pages: get().pages.map((p) => (p.id === pageId ? { ...p, title: updated.title } : p)),
+        page: cur && cur.id === pageId ? { ...cur, title: updated.title } : cur,
+      });
+    },
+
+    async removePage(pageId) {
+      await pageApi.remove(pageId);
+      const remaining = get().pages.filter((p) => p.id !== pageId);
+      set({ pages: remaining });
+      if (get().page?.id === pageId) {
+        const fallback = remaining.find((p) => p.isHome) ?? remaining[0];
+        if (fallback) await get().openPage(fallback.id);
+      }
     },
 
     select: (id) => set({ selectedId: id }),

@@ -73,8 +73,10 @@ export async function savePage(
 ): Promise<PageDTO> {
   const page = await requirePage(pageId, userId);
   if (input.title !== undefined) page.title = input.title;
-  page.tree = input.tree;
-  page.markModified("tree");
+  if (input.tree !== undefined) {
+    page.tree = input.tree;
+    page.markModified("tree");
+  }
   await page.save();
   return toPageDTO(page);
 }
