@@ -13,8 +13,8 @@ tokens that propagates across the whole site.
 
 ## Why WebForge
 
-1. **AI-first** _(Phase 2)_ — generate a full site (structure + copy + palette + type)
-   from a business prompt, not rigid templates.
+1. **AI-first** — generate a full site (structure + copy + palette + type) from a
+   business prompt, not rigid templates. _(Implemented — needs `ANTHROPIC_API_KEY`.)_
 2. **Visual editing without cages** — Webflow-like control with Wix-like simplicity.
 3. **Real code export, no lock-in** _(Phase 5)_ — the renderer already emits clean,
    self-contained static HTML/CSS.
@@ -181,6 +181,8 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 | `GET` | `/api/pages/:id/preview` | Rendered draft HTML (editor preview) |
 | `GET/PATCH` | `/api/workspaces/:id/brandkit` | Read / update design tokens |
 | `POST` | `/api/sites/:id/publish` · `/unpublish` | Publish / unpublish |
+| `POST` | `/api/workspaces/:id/assets` · `GET` | Upload / list image assets |
+| `POST` | `/api/workspaces/:id/generate-site` | **AI** — build a full site from a business prompt |
 | `GET` | `/s/:siteSlug[/:pageSlug]` | **Public** published site (no auth) |
 
 ---
@@ -188,8 +190,11 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 ## Roadmap
 
 - **Phase 1 (done):** scaffold, multi-tenant auth, models, editor + drag&drop, Brand Kit
-  tokens, autosave, renderer, responsive preview, abstracted publish/storage.
-- **Phase 2:** AI site generation (business prompt → site) + logo maker.
+  tokens, autosave, renderer, responsive preview, abstracted publish/storage; plus image
+  uploads, page management and CI.
+- **Phase 2 (done):** AI site generation — a business prompt → structured plan (Claude,
+  forced tool use) → full site (pages + copy + palette + fonts) + a monogram logo maker.
+  Set `ANTHROPIC_API_KEY` to enable; the endpoint degrades gracefully (501) without it.
 - **Phase 3:** e-commerce checkout (Mercado Pago / Stripe). Models are already in place.
 - **Phase 4:** events + RSVP + forms. Models are already in place.
 - **Phase 5:** productive publishing (Cloudflare Pages + R2, custom domains + SSL),
