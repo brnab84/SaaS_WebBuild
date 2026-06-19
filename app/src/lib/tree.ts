@@ -73,9 +73,9 @@ export function moveNode(tree: Block, id: string, toParentId: string, toIndex: n
 
   const [moved] = info.parent.children.splice(info.index, 1);
   if (!moved) return next;
-  let i = Math.max(0, Math.min(toIndex, target.children.length));
-  // Adjust if removing earlier in the same parent shifted indices.
-  if (info.parent.id === target.id && info.index < i) i -= 1;
+  // `toIndex` is the position in the post-removal array (target length already
+  // reflects the splice above when moving within the same parent).
+  const i = Math.max(0, Math.min(toIndex, target.children.length));
   target.children.splice(i, 0, moved);
   return next;
 }
