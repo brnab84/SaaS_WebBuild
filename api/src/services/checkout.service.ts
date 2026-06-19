@@ -11,6 +11,7 @@ import { Product } from "../models/Product.js";
 import { Site } from "../models/Site.js";
 import { badRequest, notFound } from "../utils/http-error.js";
 import { requireWorkspace } from "./access.service.js";
+import { sendEmail } from "./email.service.js";
 import { paymentService } from "./payment/index.js";
 
 export function toOrderDTO(o: OrderDoc): OrderDTO {
@@ -109,6 +110,15 @@ export async function markOrderPaid(orderId: string): Promise<boolean> {
   if (order.status === "pending") {
     order.status = "paid";
     await order.save();
+    if (order.customer?.email) {
+      const total = `${order.currency} ${(order.totalCents / 100).toFixed(2)}`;
+      await sendEmail({
+        to: order.customer.email,
+        subject: "Your order is confirmed",
+        html: `<p>Hi ${order.customer.name},</p><p>We received your payment of <strong>${total}</strong>. Thank you!</p>`,
+        text: `Payment of ${total} received. Thank you!`,
+      });
+    }
   }
   return true;
 }

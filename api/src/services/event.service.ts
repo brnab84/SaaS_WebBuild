@@ -11,6 +11,7 @@ import { Site } from "../models/Site.js";
 import { badRequest, notFound } from "../utils/http-error.js";
 import { slugify, withRandomSuffix } from "../utils/slug.js";
 import { requireSite, requireWorkspace } from "./access.service.js";
+import { sendEmail } from "./email.service.js";
 
 function goingCount(ev: Pick<EventDoc, "rsvps">): number {
   return ev.rsvps.filter((r) => r.status === "going").reduce((n, r) => n + r.guests, 0);
@@ -166,6 +167,15 @@ export async function rsvpToEvent(eventId: string, input: RsvpInput): Promise<Rs
   else ev.rsvps.push(entry);
   ev.markModified("rsvps");
   await ev.save();
+
+  if (input.status === "going") {
+    await sendEmail({
+      to: input.email,
+      subject: `You're going to ${ev.title}`,
+      html: `<p>Hi ${input.name},</p><p>Your RSVP to <strong>${ev.title}</strong> is confirmed.</p>`,
+      text: `Your RSVP to ${ev.title} is confirmed.`,
+    });
+  }
 
   const going = goingCount(ev);
   return {

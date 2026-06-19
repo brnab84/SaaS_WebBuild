@@ -30,5 +30,21 @@ export function verifyAccessToken(token: string): AccessPayload {
 
 export function verifyRefreshToken(token: string): RefreshPayload {
   const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as jwt.JwtPayload;
+  if (decoded.typ) throw new Error("Not a refresh token");
+  return { sub: String(decoded.sub), ver: Number(decoded.ver ?? 0) };
+}
+
+/** Short-lived password-reset token (1h). Carries the user's tokenVersion so it
+ *  is invalidated once the password changes. */
+export function signResetToken(userId: string, tokenVersion: number): string {
+  return jwt.sign({ ver: tokenVersion, typ: "reset" }, env.JWT_REFRESH_SECRET, {
+    subject: userId,
+    expiresIn: "1h",
+  });
+}
+
+export function verifyResetToken(token: string): RefreshPayload {
+  const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as jwt.JwtPayload;
+  if (decoded.typ !== "reset") throw new Error("Not a reset token");
   return { sub: String(decoded.sub), ver: Number(decoded.ver ?? 0) };
 }

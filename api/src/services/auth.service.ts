@@ -12,12 +12,16 @@ import { env } from "../config/env.js";
 import { BrandKit } from "../models/BrandKit.js";
 import { User, type UserDoc } from "../models/User.js";
 import { Workspace, type WorkspaceDoc } from "../models/Workspace.js";
+import type { AuthTokens } from "@webforge/shared";
 import { badRequest, conflict, unauthorized } from "../utils/http-error.js";
 import { slugify, withRandomSuffix } from "../utils/slug.js";
+import { sendEmail } from "./email.service.js";
 import {
   signAccessToken,
   signRefreshToken,
+  signResetToken,
   verifyRefreshToken,
+  verifyResetToken,
 } from "./token.service.js";
 
 const BCRYPT_ROUNDS = 12;
@@ -131,4 +135,53 @@ export async function me(userId: string): Promise<{ user: UserDTO; workspaces: W
   if (!user) throw unauthorized();
   const workspaces = await Workspace.find({ "members.user": user._id }).sort({ createdAt: 1 });
   return { user: toUserDTO(user), workspaces: workspaces.map(toWorkspaceDTO) };
+}
+
+/** Change password for the authenticated user; returns fresh tokens. */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<AuthTokens> {
+  const user = await User.findById(userId);
+  if (!user) throw unauthorized();
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    throw unauthorized("Current password is incorrect");
+  }
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  user.tokenVersion += 1; // invalidate other sessions
+  await user.save();
+  return issueTokens(user);
+}
+
+/** Email a reset link. Always resolves (never reveals whether the email exists). */
+export async function forgotPassword(email: string): Promise<void> {
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) return;
+  const token = signResetToken(user._id.toString(), user.tokenVersion);
+  const link = `${env.PUBLIC_URL}/reset-password?token=${encodeURIComponent(token)}`;
+  await sendEmail({
+    to: user.email,
+    subject: "Reset your WebForge password",
+    html:
+      `<p>Hi ${user.name},</p><p>Click the link below to set a new password (valid for 1 hour):</p>` +
+      `<p><a href="${link}">Reset my password</a></p><p>If you didn't request this, ignore this email.</p>`,
+    text: `Reset your WebForge password: ${link}`,
+  });
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+  let payload;
+  try {
+    payload = verifyResetToken(token);
+  } catch {
+    throw badRequest("Invalid or expired reset link");
+  }
+  const user = await User.findById(payload.sub);
+  if (!user || user.tokenVersion !== payload.ver) {
+    throw badRequest("Invalid or expired reset link");
+  }
+  user.passwordHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+  user.tokenVersion += 1; // single-use: invalidates the reset token
+  await user.save();
 }

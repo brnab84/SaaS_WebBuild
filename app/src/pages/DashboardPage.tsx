@@ -5,6 +5,7 @@ import { siteApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
 import { GenerateSiteModal } from "../components/GenerateSiteModal.js";
 import { CreateSiteModal } from "../components/CreateSiteModal.js";
+import { ChangePasswordModal } from "../components/ChangePasswordModal.js";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showGenerate, setShowGenerate] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function refresh() {
     if (!workspace) return;
@@ -77,6 +79,9 @@ export function DashboardPage() {
             )}
             <span className="text-slate-300">·</span>
             <span className="text-slate-500">{user?.email}</span>
+            <button onClick={() => setShowPassword(true)} className="font-medium text-slate-600 hover:text-slate-900">
+              Password
+            </button>
             <button onClick={logout} className="font-medium text-slate-600 hover:text-slate-900">
               Log out
             </button>
@@ -188,6 +193,8 @@ export function DashboardPage() {
           onCreated={(siteId) => navigate(`/editor/${siteId}`)}
         />
       )}
+
+      {showPassword && <ChangePasswordModal onClose={() => setShowPassword(false)} />}
     </div>
   );
 }

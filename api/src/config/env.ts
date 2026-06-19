@@ -24,6 +24,13 @@ const envSchema = z.object({
   // Email granted platform super-admin on register/login (the product owner).
   SUPER_ADMIN_EMAIL: z.string().email().optional(),
 
+  // --- Email (EmailService) ---
+  // `log` prints emails to the server log (no credentials). `resend` sends via
+  // the Resend HTTP API.
+  EMAIL_DRIVER: z.enum(["log", "resend"]).default("log"),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("WebForge <onboarding@resend.dev>"),
+
   STORAGE_DRIVER: z.enum(["local", "r2"]).default("local"),
   STORAGE_LOCAL_DIR: z.string().default("./data/storage"),
   STORAGE_PUBLIC_PATH: z.string().default("/uploads"),

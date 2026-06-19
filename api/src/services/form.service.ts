@@ -6,8 +6,10 @@ import type {
 } from "@webforge/shared";
 import { FormSubmission, type FormSubmissionDoc } from "../models/FormSubmission.js";
 import { Site } from "../models/Site.js";
+import { Workspace } from "../models/Workspace.js";
 import { notFound } from "../utils/http-error.js";
 import { requireWorkspace } from "./access.service.js";
+import { sendEmail } from "./email.service.js";
 
 function safeFormName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 60) || "contact";
@@ -45,6 +47,23 @@ export async function submitForm(
     message: input.message ?? null,
     fields: input.fields ?? {},
   });
+
+  // Notify the workspace owner.
+  const ws = await Workspace.findById(site.workspace).populate<{ owner: { email?: string } }>(
+    "owner",
+    "email",
+  );
+  if (ws?.owner?.email) {
+    await sendEmail({
+      to: ws.owner.email,
+      subject: `New "${submission.formName}" submission on ${site.name}`,
+      html:
+        `<p>New form submission:</p><ul>` +
+        `<li>Name: ${input.name ?? "—"}</li><li>Email: ${input.email ?? "—"}</li>` +
+        `<li>Message: ${input.message ?? "—"}</li></ul>`,
+      text: `New ${submission.formName} submission from ${input.email ?? "unknown"}`,
+    });
+  }
   return { ok: true, id: submission._id.toString() };
 }
 

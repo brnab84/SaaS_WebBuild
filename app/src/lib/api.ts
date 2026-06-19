@@ -5,6 +5,7 @@ import type {
   AdminWorkspaceRow,
   AssetDTO,
   AuthResponse,
+  AuthTokens,
   BrandKit,
   CheckoutInput,
   CheckoutResponse,
@@ -109,6 +110,18 @@ export const authApi = {
     request<AuthResponse>("/api/auth/register", { method: "POST", body: input }),
   login: (input: LoginInput) =>
     request<AuthResponse>("/api/auth/login", { method: "POST", body: input }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ tokens: AuthTokens }>("/api/auth/change-password", {
+      method: "POST",
+      body: { currentPassword, newPassword },
+    }),
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean }>("/api/auth/forgot-password", { method: "POST", body: { email } }),
+  resetPassword: (token: string, newPassword: string) =>
+    request<{ ok: boolean }>("/api/auth/reset-password", {
+      method: "POST",
+      body: { token, newPassword },
+    }),
 };
 
 /* --------------------------------- sites ---------------------------------- */

@@ -5,6 +5,7 @@ import type { PageDTO } from "@webforge/shared";
 import { createApp } from "./app.js";
 import { connectDB, disconnectDB } from "./db/connect.js";
 import { User } from "./models/User.js";
+import { signResetToken } from "./services/token.service.js";
 
 let mongo: MongoMemoryServer;
 let server: Server;
@@ -490,5 +491,68 @@ describe("WebForge API end-to-end (Phase 1)", () => {
 
     const sites = await json<{ items: { slug: string }[] }>(await api("/api/admin/sites"));
     expect(sites.items.some((s) => s.slug === state.siteSlug)).toBe(true);
+  });
+
+  /* --------------------------- password flows -------------------------- */
+
+  it("changes the password (wrong current -> 401, then new one works)", async () => {
+    const wrong = await api("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword: "WRONG", newPassword: "newpassword123" }),
+    });
+    expect(wrong.status).toBe(401);
+
+    const ok = await api("/api/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword: "supersecret", newPassword: "newpassword123" }),
+    });
+    expect(ok.status).toBe(200);
+
+    const oldLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "ada@example.com", password: "supersecret" }),
+    });
+    expect(oldLogin.status).toBe(401);
+    const newLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "ada@example.com", password: "newpassword123" }),
+    });
+    expect(newLogin.status).toBe(200);
+  });
+
+  it("forgot-password never reveals existence; reset rejects a bad token", async () => {
+    for (const email of ["ada@example.com", "nobody@example.com"]) {
+      const r = await fetch(`${baseUrl}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      expect(r.status).toBe(200);
+    }
+    const bad = await fetch(`${baseUrl}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: "not-a-real-token-aaaaaaaaaa", newPassword: "whatever123" }),
+    });
+    expect(bad.status).toBe(400);
+  });
+
+  it("resets the password with a valid token", async () => {
+    const user = await User.findOne({ email: "ada@example.com" });
+    const token = signResetToken(user!._id.toString(), user!.tokenVersion);
+    const res = await fetch(`${baseUrl}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, newPassword: "resetpass123" }),
+    });
+    expect(res.status).toBe(200);
+    const login = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "ada@example.com", password: "resetpass123" }),
+    });
+    expect(login.status).toBe(200);
   });
 });

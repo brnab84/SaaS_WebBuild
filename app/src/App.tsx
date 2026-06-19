@@ -6,6 +6,7 @@ import { EditorPage } from "./pages/EditorPage.js";
 import { StorePage } from "./pages/StorePage.js";
 import { EventsPage } from "./pages/EventsPage.js";
 import { AdminPage } from "./pages/AdminPage.js";
+import { ForgotPasswordPage, ResetPasswordPage } from "./pages/PasswordPages.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -25,6 +26,8 @@ export function App() {
         path="/register"
         element={isAuthenticated ? <Navigate to="/" replace /> : <AuthPage mode="register" />}
       />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route
         path="/"
         element={

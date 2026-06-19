@@ -86,6 +86,14 @@ export function AuthPage({ mode }: { mode: "login" | "register" }) {
             />
           )}
 
+          {!isRegister && (
+            <div className="text-right">
+              <a href="/forgot-password" className="text-xs font-medium text-indigo-600 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+          )}
+
           {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <button
