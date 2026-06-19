@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@webforge/renderer": "*",
     "@webforge/shared": "*",
     "bcryptjs": "^2.4.3",

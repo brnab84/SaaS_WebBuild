@@ -4,6 +4,7 @@ import type {
   BrandKit,
   CreatePageInput,
   CreateSiteInput,
+  GenerateSiteInput,
   LoginInput,
   PageDTO,
   Paginated,
@@ -99,6 +100,11 @@ export const siteApi = {
     request<Paginated<SiteDTO>>(`/api/workspaces/${workspaceId}/sites?page=${page}`),
   create: (workspaceId: string, input: CreateSiteInput) =>
     request<SiteDTO>(`/api/workspaces/${workspaceId}/sites`, { method: "POST", body: input }),
+  generate: (workspaceId: string, input: GenerateSiteInput) =>
+    request<SiteDTO>(`/api/workspaces/${workspaceId}/generate-site`, {
+      method: "POST",
+      body: input,
+    }),
   get: (siteId: string) => request<SiteDTO>(`/api/sites/${siteId}`),
   remove: (siteId: string) => request<void>(`/api/sites/${siteId}`, { method: "DELETE" }),
   publish: (siteId: string) =>

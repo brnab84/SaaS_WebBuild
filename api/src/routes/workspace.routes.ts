@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createSiteSchema,
+  generateSiteSchema,
   paginationQuerySchema,
   updateBrandKitSchema,
 } from "@webforge/shared";
@@ -21,6 +22,7 @@ import {
   createSiteHandler,
   listSitesHandler,
 } from "../controllers/site.controller.js";
+import { generateSiteHandler } from "../controllers/ai.controller.js";
 
 export const workspaceRouter = Router();
 
@@ -44,6 +46,13 @@ workspaceRouter.post(
   "/:workspaceId/sites",
   validate(createSiteSchema),
   asyncHandler(createSiteHandler),
+);
+
+// Phase 2 — AI site generation (prompt -> full site).
+workspaceRouter.post(
+  "/:workspaceId/generate-site",
+  validate(generateSiteSchema),
+  asyncHandler(generateSiteHandler),
 );
 
 workspaceRouter.get(

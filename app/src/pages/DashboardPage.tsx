@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { SiteDTO } from "@webforge/shared";
 import { siteApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
+import { GenerateSiteModal } from "../components/GenerateSiteModal.js";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function DashboardPage() {
   const [sites, setSites] = useState<SiteDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showGenerate, setShowGenerate] = useState(false);
 
   async function refresh() {
     if (!workspace) return;
@@ -76,13 +78,23 @@ export function DashboardPage() {
       <main className="mx-auto max-w-5xl px-6 py-8">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-800">Your sites</h1>
-          <button
-            onClick={createSite}
-            disabled={creating}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {creating ? "Creating…" : "+ New site"}
-          </button>
+          <div className="flex items-center gap-2">
+            {workspace && (
+              <button
+                onClick={() => setShowGenerate(true)}
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+              >
+                ✨ Generate with AI
+              </button>
+            )}
+            <button
+              onClick={createSite}
+              disabled={creating}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {creating ? "Creating…" : "+ Blank site"}
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -91,8 +103,16 @@ export function DashboardPage() {
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
             <p className="text-lg font-medium text-slate-700">No sites yet</p>
             <p className="mt-1 text-sm text-slate-500">
-              Create your first site to start building with blocks.
+              Describe your business and let AI build the first draft — or start from a blank site.
             </p>
+            {workspace && (
+              <button
+                onClick={() => setShowGenerate(true)}
+                className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+              >
+                ✨ Generate with AI
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -144,6 +164,14 @@ export function DashboardPage() {
           </div>
         )}
       </main>
+
+      {showGenerate && workspace && (
+        <GenerateSiteModal
+          workspaceId={workspace.id}
+          onClose={() => setShowGenerate(false)}
+          onCreated={(siteId) => navigate(`/editor/${siteId}`)}
+        />
+      )}
     </div>
   );
 }

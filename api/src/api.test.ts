@@ -225,4 +225,14 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     const delHome = await api(`/api/pages/${state.homePageId}`, { method: "DELETE" });
     expect(delHome.status).toBe(403);
   });
+
+  it("returns 501 for AI generation when no API key is configured", async () => {
+    // The test env has no ANTHROPIC_API_KEY — the endpoint should degrade gracefully.
+    const res = await api(`/api/workspaces/${state.workspaceId}/generate-site`, {
+      method: "POST",
+      body: JSON.stringify({ prompt: "A cozy neighbourhood bookstore with events." }),
+    });
+    expect(res.status).toBe(501);
+    expect((await json(res)).error).toMatch(/ANTHROPIC_API_KEY/);
+  });
 });

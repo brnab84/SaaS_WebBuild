@@ -63,6 +63,13 @@ export const createSiteSchema = z.object({
 });
 export type CreateSiteInput = z.infer<typeof createSiteSchema>;
 
+/** Phase 2 — generate a full site from a business description. */
+export const generateSiteSchema = z.object({
+  prompt: z.string().min(10).max(4000),
+  name: z.string().min(1).max(140).optional(),
+});
+export type GenerateSiteInput = z.infer<typeof generateSiteSchema>;
+
 export const updateSiteSchema = z
   .object({
     name: z.string().min(1).max(140).optional(),

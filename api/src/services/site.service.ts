@@ -26,7 +26,7 @@ export function toSiteDTO(site: SiteDoc): SiteDTO {
   };
 }
 
-async function uniqueSiteSlug(desired: string): Promise<string> {
+export async function uniqueSiteSlug(desired: string): Promise<string> {
   let slug = slugify(desired);
   while (await Site.exists({ slug })) slug = withRandomSuffix(slugify(desired));
   return slug;
