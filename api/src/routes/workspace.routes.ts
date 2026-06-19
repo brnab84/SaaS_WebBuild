@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  createProductSchema,
   createSiteSchema,
   generateSiteSchema,
   paginationQuerySchema,
@@ -23,6 +24,11 @@ import {
   listSitesHandler,
 } from "../controllers/site.controller.js";
 import { generateSiteHandler } from "../controllers/ai.controller.js";
+import {
+  createProductHandler,
+  listProductsHandler,
+} from "../controllers/product.controller.js";
+import { listOrdersHandler } from "../controllers/checkout.controller.js";
 
 export const workspaceRouter = Router();
 
@@ -53,6 +59,23 @@ workspaceRouter.post(
   "/:workspaceId/generate-site",
   validate(generateSiteSchema),
   asyncHandler(generateSiteHandler),
+);
+
+// Phase 3 — e-commerce: products + orders (workspace-scoped, admin).
+workspaceRouter.get(
+  "/:workspaceId/products",
+  validate(paginationQuerySchema, "query"),
+  asyncHandler(listProductsHandler),
+);
+workspaceRouter.post(
+  "/:workspaceId/products",
+  validate(createProductSchema),
+  asyncHandler(createProductHandler),
+);
+workspaceRouter.get(
+  "/:workspaceId/orders",
+  validate(paginationQuerySchema, "query"),
+  asyncHandler(listOrdersHandler),
 );
 
 workspaceRouter.get(

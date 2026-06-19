@@ -2,16 +2,22 @@ import type {
   AssetDTO,
   AuthResponse,
   BrandKit,
+  CheckoutInput,
+  CheckoutResponse,
   CreatePageInput,
+  CreateProductInput,
   CreateSiteInput,
   GenerateSiteInput,
   LoginInput,
+  OrderDTO,
   PageDTO,
   Paginated,
+  ProductDTO,
   RegisterInput,
   SavePageInput,
   SiteDTO,
   UpdateBrandKitInput,
+  UpdateProductInput,
 } from "@webforge/shared";
 import { useAuthStore } from "../store/auth.js";
 
@@ -125,6 +131,31 @@ export const pageApi = {
   save: (pageId: string, input: SavePageInput) =>
     request<PageDTO>(`/api/pages/${pageId}`, { method: "PATCH", body: input }),
   remove: (pageId: string) => request<void>(`/api/pages/${pageId}`, { method: "DELETE" }),
+};
+
+/* ------------------------------- products --------------------------------- */
+export const productApi = {
+  list: (workspaceId: string, page = 1) =>
+    request<Paginated<ProductDTO>>(`/api/workspaces/${workspaceId}/products?page=${page}&limit=100`),
+  create: (workspaceId: string, input: CreateProductInput) =>
+    request<ProductDTO>(`/api/workspaces/${workspaceId}/products`, { method: "POST", body: input }),
+  update: (productId: string, input: UpdateProductInput) =>
+    request<ProductDTO>(`/api/products/${productId}`, { method: "PATCH", body: input }),
+  remove: (productId: string) => request<void>(`/api/products/${productId}`, { method: "DELETE" }),
+};
+
+/* -------------------------------- orders ---------------------------------- */
+export const orderApi = {
+  list: (workspaceId: string, page = 1) =>
+    request<Paginated<OrderDTO>>(`/api/workspaces/${workspaceId}/orders?page=${page}`),
+};
+
+/* ------------------------------ storefront -------------------------------- */
+export const storefrontApi = {
+  // Public checkout — no auth needed, but reusing request() is fine (it just
+  // attaches a token if present).
+  checkout: (siteId: string, input: CheckoutInput) =>
+    request<CheckoutResponse>(`/api/storefront/${siteId}/checkout`, { method: "POST", body: input }),
 };
 
 /* ------------------------------- brandkit --------------------------------- */

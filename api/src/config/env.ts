@@ -30,6 +30,15 @@ const envSchema = z.object({
 
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default("claude-opus-4-8"),
+
+  // --- Payments (Phase 3) ---
+  // `mock` works with no credentials (local simulated checkout); the real
+  // drivers need the matching keys below.
+  PAYMENT_DRIVER: z.enum(["mock", "stripe", "mercadopago"]).default("mock"),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  MERCADOPAGO_ACCESS_TOKEN: z.string().optional(),
+  MERCADOPAGO_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

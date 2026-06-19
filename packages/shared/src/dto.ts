@@ -144,6 +144,91 @@ export interface AssetDTO {
   createdAt: string;
 }
 
+/* --------------------------------- products ------------------------------- */
+
+export const createProductSchema = z.object({
+  title: z.string().min(1).max(160),
+  description: z.string().max(2000).optional(),
+  priceCents: z.number().int().min(0),
+  currency: z
+    .string()
+    .regex(/^[A-Z]{3}$/, "3-letter currency code")
+    .default("USD"),
+  images: z.array(z.string()).max(8).default([]),
+  stock: z.number().int().min(0).nullable().optional(),
+  active: z.boolean().default(true),
+  siteId: z.string().optional(),
+});
+export type CreateProductInput = z.infer<typeof createProductSchema>;
+
+export const updateProductSchema = createProductSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, "Empty update");
+export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+
+export interface ProductDTO {
+  id: string;
+  workspace: string;
+  site: string | null;
+  title: string;
+  slug: string;
+  description: string;
+  priceCents: number;
+  currency: string;
+  images: string[];
+  stock: number | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ---------------------------- checkout / orders --------------------------- */
+
+export const checkoutSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.number().int().min(1).max(99),
+      }),
+    )
+    .min(1)
+    .max(50),
+  customer: z.object({
+    name: z.string().min(1).max(120),
+    email: z.string().email(),
+  }),
+});
+export type CheckoutInput = z.infer<typeof checkoutSchema>;
+
+export type PaymentProvider = "mock" | "stripe" | "mercadopago";
+export type OrderStatus = "pending" | "paid" | "fulfilled" | "cancelled" | "refunded";
+
+export interface OrderItemDTO {
+  product: string;
+  title: string;
+  priceCents: number;
+  quantity: number;
+}
+export interface OrderDTO {
+  id: string;
+  workspace: string;
+  site: string | null;
+  items: OrderItemDTO[];
+  totalCents: number;
+  currency: string;
+  status: OrderStatus;
+  provider: PaymentProvider | null;
+  customer: { name: string; email: string } | null;
+  createdAt: string;
+}
+
+export interface CheckoutResponse {
+  checkoutUrl: string;
+  orderId: string;
+  provider: PaymentProvider;
+}
+
 /* --------------------------------- brandkit ------------------------------- */
 
 export const updateBrandKitSchema = brandKitSchema.partial();

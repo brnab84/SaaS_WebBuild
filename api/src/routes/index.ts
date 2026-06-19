@@ -4,6 +4,8 @@ import { workspaceRouter } from "./workspace.routes.js";
 import { siteRouter } from "./site.routes.js";
 import { pageRouter } from "./page.routes.js";
 import { assetRouter } from "./asset.routes.js";
+import { productRouter } from "./product.routes.js";
+import { storefrontRouter } from "./storefront.routes.js";
 
 /** All authenticated/JSON API routes, mounted under /api. */
 export const apiRouter = Router();
@@ -17,3 +19,5 @@ apiRouter.use("/workspaces", workspaceRouter);
 apiRouter.use("/sites", siteRouter);
 apiRouter.use("/pages", pageRouter);
 apiRouter.use("/assets", assetRouter);
+apiRouter.use("/products", productRouter);
+apiRouter.use("/storefront", storefrontRouter);

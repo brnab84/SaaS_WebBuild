@@ -67,6 +67,13 @@ export function DashboardPage() {
             )}
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <button
+              onClick={() => navigate("/store")}
+              className="font-medium text-slate-600 hover:text-slate-900"
+            >
+              Store
+            </button>
+            <span className="text-slate-300">·</span>
             <span className="text-slate-500">{user?.email}</span>
             <button onClick={logout} className="font-medium text-slate-600 hover:text-slate-900">
               Log out

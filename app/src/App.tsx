@@ -3,6 +3,7 @@ import { useAuthStore } from "./store/auth.js";
 import { AuthPage } from "./pages/AuthPage.js";
 import { DashboardPage } from "./pages/DashboardPage.js";
 import { EditorPage } from "./pages/EditorPage.js";
+import { StorePage } from "./pages/StorePage.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -35,6 +36,14 @@ export function App() {
         element={
           <RequireAuth>
             <EditorPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/store"
+        element={
+          <RequireAuth>
+            <StorePage />
           </RequireAuth>
         }
       />

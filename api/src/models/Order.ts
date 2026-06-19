@@ -19,7 +19,7 @@ export interface OrderDoc {
   totalCents: number;
   currency: string;
   status: "pending" | "paid" | "fulfilled" | "cancelled" | "refunded";
-  provider: "stripe" | "mercadopago" | null;
+  provider: "mock" | "stripe" | "mercadopago" | null;
   providerRef: string | null;
   customer: { name: string; email: string } | null;
   createdAt: Date;
@@ -49,7 +49,7 @@ const orderSchema = new Schema<OrderDoc>(
       default: "pending",
       index: true,
     },
-    provider: { type: String, enum: ["stripe", "mercadopago", null], default: null },
+    provider: { type: String, enum: ["mock", "stripe", "mercadopago", null], default: null },
     providerRef: { type: String, default: null },
     customer: { type: Schema.Types.Mixed, default: null },
   },

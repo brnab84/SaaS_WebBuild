@@ -6,7 +6,10 @@ import helmet from "helmet";
 import { env } from "./config/env.js";
 import { apiRouter } from "./routes/index.js";
 import { publicRouter } from "./routes/public.routes.js";
+import { checkoutPagesRouter } from "./routes/checkout-pages.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
+import { webhookHandler } from "./controllers/checkout.controller.js";
+import { asyncHandler } from "./utils/async-handler.js";
 import { storageService, LocalStorageService } from "./services/storage/index.js";
 import { logger } from "./utils/logger.js";
 
@@ -29,6 +32,14 @@ export function createApp(): express.Express {
       credentials: true,
     }),
   );
+  // Payment webhook needs the RAW body for signature verification (Stripe), so
+  // it must be registered before the JSON body parser.
+  app.post(
+    "/api/payments/webhook",
+    express.raw({ type: "*/*" }),
+    asyncHandler(webhookHandler),
+  );
+
   app.use(express.json({ limit: "4mb" }));
 
   // Tiny request log (dev only) — swap for pino-http later.
@@ -44,9 +55,10 @@ export function createApp(): express.Express {
     app.use(storageService.mountPath, express.static(storageService.directory));
   }
 
-  // JSON API + public published-site serving.
+  // JSON API + public published-site serving + hosted-checkout pages.
   app.use("/api", apiRouter);
   app.use("/s", publicRouter);
+  app.use("/checkout", checkoutPagesRouter);
 
   // Serve the built editor SPA (production). In dev it runs on the Vite server.
   const appDist = resolve(import.meta.dirname, "../../app/dist");

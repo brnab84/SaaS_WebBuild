@@ -18,6 +18,9 @@ const state: {
   homePageId: string;
 } = { accessToken: "", workspaceId: "", siteId: "", siteSlug: "", homePageId: "" };
 
+// Phase 3 e-commerce state threaded through its tests.
+const ecom = { productId: "", orderId: "" };
+
 async function api(path: string, init: RequestInit = {}) {
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -234,5 +237,91 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     });
     expect(res.status).toBe(501);
     expect((await json(res)).error).toMatch(/ANTHROPIC_API_KEY/);
+  });
+
+  /* ----------------------- Phase 3: e-commerce ------------------------ */
+
+  it("creates, lists and updates products", async () => {
+    const created = await json<{ id: string; slug: string; priceCents: number; active: boolean }>(
+      await api(`/api/workspaces/${state.workspaceId}/products`, {
+        method: "POST",
+        body: JSON.stringify({ title: "Signed paperback", priceCents: 2500, currency: "USD" }),
+      }),
+    );
+    expect(created.priceCents).toBe(2500);
+    expect(created.slug).toBe("signed-paperback");
+    ecom.productId = created.id;
+
+    const list = await json<{ items: { id: string }[]; total: number }>(
+      await api(`/api/workspaces/${state.workspaceId}/products`),
+    );
+    expect(list.items.some((p) => p.id === ecom.productId)).toBe(true);
+
+    const updated = await json<{ priceCents: number }>(
+      await api(`/api/products/${ecom.productId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ priceCents: 3000 }),
+      }),
+    );
+    expect(updated.priceCents).toBe(3000);
+  });
+
+  it("runs a public checkout through the mock provider and marks the order paid", async () => {
+    // Checkout is public; the buyer sends only product ids + quantities.
+    const checkout = await json<{ checkoutUrl: string; orderId: string; provider: string }>(
+      await fetch(`${baseUrl}/api/storefront/${state.siteId}/checkout`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          items: [{ productId: ecom.productId, quantity: 2 }],
+          customer: { name: "Buyer One", email: "buyer@example.com" },
+        }),
+      }),
+    );
+    expect(checkout.provider).toBe("mock");
+    expect(checkout.checkoutUrl).toContain(`/checkout/mock/${checkout.orderId}`);
+    ecom.orderId = checkout.orderId;
+
+    // Price is computed server-side: 3000 (updated) * 2.
+    const before = await json<{ status: string; totalCents: number }>(
+      await fetch(`${baseUrl}/api/storefront/orders/${ecom.orderId}`),
+    );
+    expect(before.status).toBe("pending");
+    expect(before.totalCents).toBe(6000);
+
+    // The hosted mock checkout page renders.
+    const pageRes = await fetch(`${baseUrl}/checkout/mock/${ecom.orderId}`);
+    expect(pageRes.status).toBe(200);
+    expect(await pageRes.text()).toContain("Test checkout");
+
+    // Confirm payment (stands in for the provider callback).
+    const confirm = await fetch(`${baseUrl}/api/storefront/mock/${ecom.orderId}/confirm`, {
+      method: "POST",
+    });
+    expect(confirm.status).toBe(200);
+
+    const after = await json<{ status: string }>(
+      await fetch(`${baseUrl}/api/storefront/orders/${ecom.orderId}`),
+    );
+    expect(after.status).toBe("paid");
+  });
+
+  it("rejects checkout referencing an unknown product", async () => {
+    const res = await fetch(`${baseUrl}/api/storefront/${state.siteId}/checkout`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        items: [{ productId: "60a000000000000000000000", quantity: 1 }],
+        customer: { name: "X", email: "x@example.com" },
+      }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("lists the workspace orders (admin) including the paid one", async () => {
+    const list = await json<{ items: { id: string; status: string }[] }>(
+      await api(`/api/workspaces/${state.workspaceId}/orders`),
+    );
+    expect(list.items.find((o) => o.id === ecom.orderId)?.status).toBe("paid");
   });
 });
