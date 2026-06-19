@@ -1,0 +1,54 @@
+import { resolve } from "node:path";
+import { config as loadDotenv } from "dotenv";
+import { z } from "zod";
+
+// Load the repo-root .env (api runs with cwd = api/). On Railway, env vars are
+// injected directly and the file is simply absent — that's fine.
+loadDotenv({ path: resolve(import.meta.dirname, "../../../.env") });
+loadDotenv(); // also pick up a local api/.env if present
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().positive().default(4000),
+  PUBLIC_URL: z.string().url().default("http://localhost:4000"),
+  APP_ORIGIN: z.string().url().default("http://localhost:5173"),
+
+  MONGODB_URI: z.string().min(1).default("mongodb://127.0.0.1:27017/webforge"),
+  MONGODB_DB_NAME: z.string().default("webforge"),
+
+  JWT_ACCESS_SECRET: z.string().min(1).default("dev-access-secret-change-me"),
+  JWT_REFRESH_SECRET: z.string().min(1).default("dev-refresh-secret-change-me"),
+  JWT_ACCESS_TTL: z.string().default("15m"),
+  JWT_REFRESH_TTL: z.string().default("30d"),
+
+  STORAGE_DRIVER: z.enum(["local", "r2"]).default("local"),
+  STORAGE_LOCAL_DIR: z.string().default("./data/storage"),
+  STORAGE_PUBLIC_PATH: z.string().default("/assets"),
+
+  PUBLISH_DRIVER: z.enum(["local", "cloudflare-pages"]).default("local"),
+  PUBLISH_LOCAL_DIR: z.string().default("./data/published"),
+
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default("claude-opus-4-8"),
+});
+
+const parsed = envSchema.safeParse(process.env);
+if (!parsed.success) {
+  console.error("❌ Invalid environment configuration:");
+  console.error(parsed.error.flatten().fieldErrors);
+  process.exit(1);
+}
+
+export const env = parsed.data;
+export const isProd = env.NODE_ENV === "production";
+export const isTest = env.NODE_ENV === "test";
+
+// Guardrail: never ship default secrets to production.
+if (
+  isProd &&
+  (env.JWT_ACCESS_SECRET.includes("change-me") ||
+    env.JWT_REFRESH_SECRET.includes("change-me"))
+) {
+  console.error("❌ Refusing to start in production with default JWT secrets.");
+  process.exit(1);
+}
