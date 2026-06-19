@@ -4,6 +4,7 @@ import type { SiteDTO } from "@webforge/shared";
 import { siteApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
 import { GenerateSiteModal } from "../components/GenerateSiteModal.js";
+import { CreateSiteModal } from "../components/CreateSiteModal.js";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -13,8 +14,8 @@ export function DashboardPage() {
 
   const [sites, setSites] = useState<SiteDTO[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [showGenerate, setShowGenerate] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   async function refresh() {
     if (!workspace) return;
@@ -31,19 +32,6 @@ export function DashboardPage() {
     void refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspace?.id]);
-
-  async function createSite() {
-    if (!workspace) return;
-    const name = window.prompt("Name your new site");
-    if (!name) return;
-    setCreating(true);
-    try {
-      const site = await siteApi.create(workspace.id, { name });
-      navigate(`/editor/${site.id}`);
-    } finally {
-      setCreating(false);
-    }
-  }
 
   async function removeSite(site: SiteDTO) {
     if (!window.confirm(`Delete "${site.name}"? This cannot be undone.`)) return;
@@ -109,11 +97,10 @@ export function DashboardPage() {
               </button>
             )}
             <button
-              onClick={createSite}
-              disabled={creating}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              onClick={() => setShowCreate(true)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              {creating ? "Creating…" : "+ Blank site"}
+              + Blank site
             </button>
           </div>
         </div>
@@ -190,6 +177,14 @@ export function DashboardPage() {
         <GenerateSiteModal
           workspaceId={workspace.id}
           onClose={() => setShowGenerate(false)}
+          onCreated={(siteId) => navigate(`/editor/${siteId}`)}
+        />
+      )}
+
+      {showCreate && workspace && (
+        <CreateSiteModal
+          workspaceId={workspace.id}
+          onClose={() => setShowCreate(false)}
           onCreated={(siteId) => navigate(`/editor/${siteId}`)}
         />
       )}
