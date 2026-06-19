@@ -63,7 +63,8 @@ Per-package typecheck: `npm run typecheck --workspace @webforge/<pkg>` (or `npx 
 
 ## Phasing
 
-Phases 1 (MVP), 2 (AI generation + logo maker) and 3 (e-commerce) are implemented.
+Phases 1 (MVP), 2 (AI generation + logo maker), 3 (e-commerce) and 4 (events + RSVP +
+forms) are implemented.
 
 - **AI** lives in `api/src/services/ai/` — Claude returns a **flat** plan via forced
   `tool_use` (structured outputs needs zod v4; we're on v3, so tool_use keeps it
@@ -74,6 +75,10 @@ Phases 1 (MVP), 2 (AI generation + logo maker) and 3 (e-commerce) are implemente
   drivers selected by `PAYMENT_DRIVER` (default `mock`, no keys needed). Checkout prices
   are always computed server-side from the DB; the webhook route uses the raw body.
 
-Later phases (events/RSVP, productive publishing/export) should only have **architecture
-prepared** — the `Event` model and the publish/storage seams already exist; don't
-implement that logic yet unless asked.
+- **Events** (`api/src/services/event.service.ts`, `form.service.ts`): event CRUD,
+  public RSVP (de-duped by email, capacity-enforced) and a generic `FormSubmission`
+  capture. Public endpoints live under `/api/storefront`.
+
+Phase 5 (productive publishing/export) is the only remaining phase — keep it
+**architecture-only** (the publish/storage seams already exist); don't implement that
+logic unless asked.

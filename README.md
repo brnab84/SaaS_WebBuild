@@ -190,6 +190,9 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 | `GET` | `/api/workspaces/:id/orders` | List orders (admin) |
 | `POST` | `/api/storefront/:siteId/checkout` | **Public** checkout → payment redirect URL |
 | `POST` | `/api/payments/webhook` | **Public** provider webhook (Stripe/MP) |
+| `GET/POST` | `/api/workspaces/:id/events` · `/api/events/:id` | Event CRUD |
+| `POST` | `/api/storefront/events/:eventId/rsvp` | **Public** RSVP (capacity-enforced) |
+| `POST` | `/api/storefront/:siteId/forms/:name` | **Public** form submission |
 | `GET` | `/s/:siteSlug[/:pageSlug]` | **Public** published site (no auth) |
 
 ---
@@ -206,6 +209,8 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
   server-side pricing, and a `PaymentService` abstraction with three drivers
   (`mock` by default — works with no keys; `stripe` and `mercadopago` real
   integrations) selected by `PAYMENT_DRIVER`. Orders + provider webhooks included.
-- **Phase 4:** events + RSVP + forms. Models are already in place.
+- **Phase 4 (done):** events + RSVP + forms — event CRUD, public RSVP with
+  de-dup and capacity enforcement, and generic form-submission capture (contact /
+  lead forms) with an admin inbox. Managed from the editor's Events page.
 - **Phase 5:** productive publishing (Cloudflare Pages + R2, custom domains + SSL),
   real code export.
