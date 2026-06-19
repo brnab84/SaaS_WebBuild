@@ -65,10 +65,13 @@ export function createApp(): express.Express {
   if (existsSync(appDist)) {
     app.use(express.static(appDist));
     app.get("*", (req, res, next) => {
+      // Use trailing-slash prefixes so SPA routes like /store aren't mistaken
+      // for the published-site router (/s/...).
       if (
-        req.path.startsWith("/api") ||
-        req.path.startsWith("/s") ||
-        req.path.startsWith("/uploads")
+        req.path.startsWith("/api/") ||
+        req.path.startsWith("/s/") ||
+        req.path.startsWith("/uploads/") ||
+        req.path.startsWith("/checkout/")
       ) {
         return next();
       }
