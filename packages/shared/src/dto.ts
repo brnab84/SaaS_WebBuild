@@ -229,6 +229,86 @@ export interface CheckoutResponse {
   provider: PaymentProvider;
 }
 
+/* --------------------------------- events --------------------------------- */
+
+export const createEventSchema = z.object({
+  title: z.string().min(1).max(160),
+  description: z.string().max(4000).optional(),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date().nullable().optional(),
+  location: z.string().max(300).optional(),
+  capacity: z.number().int().min(1).nullable().optional(),
+  siteId: z.string().optional(),
+});
+export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+export const updateEventSchema = createEventSchema
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, "Empty update");
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;
+
+export type RsvpStatus = "going" | "maybe" | "declined";
+
+export const rsvpSchema = z.object({
+  name: z.string().min(1).max(120),
+  email: z.string().email(),
+  guests: z.number().int().min(1).max(20).default(1),
+  status: z.enum(["going", "maybe", "declined"]).default("going"),
+});
+export type RsvpInput = z.infer<typeof rsvpSchema>;
+
+export interface RsvpDTO {
+  name: string;
+  email: string;
+  guests: number;
+  status: RsvpStatus;
+  createdAt: string;
+}
+
+export interface EventDTO {
+  id: string;
+  workspace: string;
+  site: string | null;
+  title: string;
+  slug: string;
+  description: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string;
+  capacity: number | null;
+  rsvps: RsvpDTO[];
+  goingCount: number;
+  spotsLeft: number | null;
+  createdAt: string;
+}
+
+/* -------------------------------- form submissions ------------------------ */
+
+export const formSubmitSchema = z
+  .object({
+    name: z.string().max(160).optional(),
+    email: z.string().email().optional(),
+    message: z.string().max(5000).optional(),
+    fields: z.record(z.string(), z.string()).optional(),
+  })
+  .refine(
+    (v) => Boolean(v.name || v.email || v.message || (v.fields && Object.keys(v.fields).length)),
+    "Submission is empty",
+  );
+export type FormSubmitInput = z.infer<typeof formSubmitSchema>;
+
+export interface FormSubmissionDTO {
+  id: string;
+  workspace: string;
+  site: string | null;
+  formName: string;
+  name: string | null;
+  email: string | null;
+  message: string | null;
+  fields: Record<string, string>;
+  createdAt: string;
+}
+
 /* --------------------------------- brandkit ------------------------------- */
 
 export const updateBrandKitSchema = brandKitSchema.partial();

@@ -6,6 +6,7 @@ import { pageRouter } from "./page.routes.js";
 import { assetRouter } from "./asset.routes.js";
 import { productRouter } from "./product.routes.js";
 import { storefrontRouter } from "./storefront.routes.js";
+import { eventRouter } from "./event.routes.js";
 
 /** All authenticated/JSON API routes, mounted under /api. */
 export const apiRouter = Router();
@@ -20,4 +21,5 @@ apiRouter.use("/sites", siteRouter);
 apiRouter.use("/pages", pageRouter);
 apiRouter.use("/assets", assetRouter);
 apiRouter.use("/products", productRouter);
+apiRouter.use("/events", eventRouter);
 apiRouter.use("/storefront", storefrontRouter);

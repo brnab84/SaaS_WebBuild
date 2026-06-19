@@ -9,3 +9,4 @@ export { Asset, type AssetDoc } from "./Asset.js";
 export { Product, type ProductDoc } from "./Product.js";
 export { Order, type OrderDoc } from "./Order.js";
 export { Event, type EventDoc } from "./Event.js";
+export { FormSubmission, type FormSubmissionDoc } from "./FormSubmission.js";

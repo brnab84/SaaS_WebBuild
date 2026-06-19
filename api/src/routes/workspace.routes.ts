@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  createEventSchema,
   createProductSchema,
   createSiteSchema,
   generateSiteSchema,
@@ -29,6 +30,11 @@ import {
   listProductsHandler,
 } from "../controllers/product.controller.js";
 import { listOrdersHandler } from "../controllers/checkout.controller.js";
+import {
+  createEventHandler,
+  listEventsHandler,
+} from "../controllers/event.controller.js";
+import { listSubmissionsHandler } from "../controllers/form.controller.js";
 
 export const workspaceRouter = Router();
 
@@ -76,6 +82,23 @@ workspaceRouter.get(
   "/:workspaceId/orders",
   validate(paginationQuerySchema, "query"),
   asyncHandler(listOrdersHandler),
+);
+
+// Phase 4 — events + form submissions (admin).
+workspaceRouter.get(
+  "/:workspaceId/events",
+  validate(paginationQuerySchema, "query"),
+  asyncHandler(listEventsHandler),
+);
+workspaceRouter.post(
+  "/:workspaceId/events",
+  validate(createEventSchema),
+  asyncHandler(createEventHandler),
+);
+workspaceRouter.get(
+  "/:workspaceId/submissions",
+  validate(paginationQuerySchema, "query"),
+  asyncHandler(listSubmissionsHandler),
 );
 
 workspaceRouter.get(

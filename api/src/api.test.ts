@@ -20,6 +20,8 @@ const state: {
 
 // Phase 3 e-commerce state threaded through its tests.
 const ecom = { productId: "", orderId: "" };
+// Phase 4 events state.
+const ev = { eventId: "" };
 
 async function api(path: string, init: RequestInit = {}) {
   const headers: Record<string, string> = {
@@ -323,5 +325,80 @@ describe("WebForge API end-to-end (Phase 1)", () => {
       await api(`/api/workspaces/${state.workspaceId}/orders`),
     );
     expect(list.items.find((o) => o.id === ecom.orderId)?.status).toBe("paid");
+  });
+
+  /* ------------------------- Phase 4: events + forms ------------------- */
+
+  it("creates and updates an event with a capacity", async () => {
+    const created = await json<{ id: string; slug: string; capacity: number }>(
+      await api(`/api/workspaces/${state.workspaceId}/events`, {
+        method: "POST",
+        body: JSON.stringify({
+          title: "Launch Party",
+          startsAt: new Date(Date.now() + 86_400_000).toISOString(),
+          capacity: 2,
+          location: "HQ",
+        }),
+      }),
+    );
+    expect(created.slug).toBe("launch-party");
+    expect(created.capacity).toBe(2);
+    ev.eventId = created.id;
+
+    const updated = await json<{ location: string }>(
+      await api(`/api/events/${ev.eventId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ location: "Rooftop" }),
+      }),
+    );
+    expect(updated.location).toBe("Rooftop");
+  });
+
+  it("accepts a public RSVP and enforces capacity", async () => {
+    // First RSVP takes both spots.
+    const first = await json<{ spotsLeft: number }>(
+      await fetch(`${baseUrl}/api/storefront/events/${ev.eventId}/rsvp`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Ada", email: "ada@example.com", guests: 2, status: "going" }),
+      }),
+    );
+    expect(first.spotsLeft).toBe(0);
+
+    // A second going RSVP overflows capacity -> 400.
+    const overflow = await fetch(`${baseUrl}/api/storefront/events/${ev.eventId}/rsvp`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Bob", email: "bob@example.com", guests: 1, status: "going" }),
+    });
+    expect(overflow.status).toBe(400);
+
+    // Admin sees the RSVP and the going count.
+    const event = await json<{ goingCount: number; rsvps: { email: string }[] }>(
+      await api(`/api/events/${ev.eventId}`),
+    );
+    expect(event.goingCount).toBe(2);
+    expect(event.rsvps.some((r) => r.email === "ada@example.com")).toBe(true);
+  });
+
+  it("captures and lists a public form submission", async () => {
+    const submit = await fetch(`${baseUrl}/api/storefront/${state.siteId}/forms/contact`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Carol", email: "carol@example.com", message: "Hi there!" }),
+    });
+    expect(submit.status).toBe(201);
+
+    const list = await json<{ items: { email: string; formName: string }[] }>(
+      await api(`/api/workspaces/${state.workspaceId}/submissions`),
+    );
+    expect(list.items.some((s) => s.email === "carol@example.com" && s.formName === "contact")).toBe(
+      true,
+    );
+  });
+
+  it("deletes an event", async () => {
+    const res = await api(`/api/events/${ev.eventId}`, { method: "DELETE" });
+    expect(res.status).toBe(204);
   });
 });

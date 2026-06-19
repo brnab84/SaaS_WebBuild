@@ -4,9 +4,13 @@ import type {
   BrandKit,
   CheckoutInput,
   CheckoutResponse,
+  CreateEventInput,
   CreatePageInput,
   CreateProductInput,
   CreateSiteInput,
+  EventDTO,
+  FormSubmissionDTO,
+  FormSubmitInput,
   GenerateSiteInput,
   LoginInput,
   OrderDTO,
@@ -14,9 +18,11 @@ import type {
   Paginated,
   ProductDTO,
   RegisterInput,
+  RsvpInput,
   SavePageInput,
   SiteDTO,
   UpdateBrandKitInput,
+  UpdateEventInput,
   UpdateProductInput,
 } from "@webforge/shared";
 import { useAuthStore } from "../store/auth.js";
@@ -150,12 +156,41 @@ export const orderApi = {
     request<Paginated<OrderDTO>>(`/api/workspaces/${workspaceId}/orders?page=${page}`),
 };
 
+/* -------------------------------- events ---------------------------------- */
+export const eventApi = {
+  list: (workspaceId: string, page = 1) =>
+    request<Paginated<EventDTO>>(`/api/workspaces/${workspaceId}/events?page=${page}&limit=100`),
+  create: (workspaceId: string, input: CreateEventInput) =>
+    request<EventDTO>(`/api/workspaces/${workspaceId}/events`, { method: "POST", body: input }),
+  get: (eventId: string) => request<EventDTO>(`/api/events/${eventId}`),
+  update: (eventId: string, input: UpdateEventInput) =>
+    request<EventDTO>(`/api/events/${eventId}`, { method: "PATCH", body: input }),
+  remove: (eventId: string) => request<void>(`/api/events/${eventId}`, { method: "DELETE" }),
+};
+
+/* ----------------------------- submissions -------------------------------- */
+export const submissionApi = {
+  list: (workspaceId: string, page = 1) =>
+    request<Paginated<FormSubmissionDTO>>(
+      `/api/workspaces/${workspaceId}/submissions?page=${page}`,
+    ),
+};
+
 /* ------------------------------ storefront -------------------------------- */
 export const storefrontApi = {
-  // Public checkout — no auth needed, but reusing request() is fine (it just
-  // attaches a token if present).
+  // Public endpoints — no auth needed (request() just attaches a token if present).
   checkout: (siteId: string, input: CheckoutInput) =>
     request<CheckoutResponse>(`/api/storefront/${siteId}/checkout`, { method: "POST", body: input }),
+  rsvp: (eventId: string, input: RsvpInput) =>
+    request<{ spotsLeft: number | null; status: string }>(
+      `/api/storefront/events/${eventId}/rsvp`,
+      { method: "POST", body: input },
+    ),
+  submitForm: (siteId: string, formName: string, input: FormSubmitInput) =>
+    request<{ ok: boolean }>(`/api/storefront/${siteId}/forms/${formName}`, {
+      method: "POST",
+      body: input,
+    }),
 };
 
 /* ------------------------------- brandkit --------------------------------- */

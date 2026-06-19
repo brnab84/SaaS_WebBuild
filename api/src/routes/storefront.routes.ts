@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkoutSchema } from "@webforge/shared";
+import { checkoutSchema, formSubmitSchema, rsvpSchema } from "@webforge/shared";
 import { validate } from "../middleware/validate.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import {
@@ -7,9 +7,23 @@ import {
   mockConfirmHandler,
   orderStatusHandler,
 } from "../controllers/checkout.controller.js";
+import { rsvpHandler } from "../controllers/event.controller.js";
+import { submitFormHandler } from "../controllers/form.controller.js";
 
-/** Public storefront endpoints (no auth — buyers don't have accounts). */
+/** Public storefront endpoints (no auth — visitors don't have accounts). */
 export const storefrontRouter = Router();
+
+// Phase 4 — public RSVP and form submission (literal routes first).
+storefrontRouter.post(
+  "/events/:eventId/rsvp",
+  validate(rsvpSchema),
+  asyncHandler(rsvpHandler),
+);
+storefrontRouter.post(
+  "/:siteId/forms/:formName",
+  validate(formSubmitSchema),
+  asyncHandler(submitFormHandler),
+);
 
 storefrontRouter.post(
   "/:siteId/checkout",
