@@ -6,8 +6,13 @@ import {
 } from "@webforge/shared";
 import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
+import { imageUpload } from "../middleware/upload.js";
 import { asyncHandler } from "../utils/async-handler.js";
 import { listWorkspacesHandler } from "../controllers/workspace.controller.js";
+import {
+  listAssetsHandler,
+  uploadAssetHandler,
+} from "../controllers/asset.controller.js";
 import {
   getBrandKitHandler,
   updateBrandKitHandler,
@@ -40,3 +45,10 @@ workspaceRouter.post(
   validate(createSiteSchema),
   asyncHandler(createSiteHandler),
 );
+
+workspaceRouter.get(
+  "/:workspaceId/assets",
+  validate(paginationQuerySchema, "query"),
+  asyncHandler(listAssetsHandler),
+);
+workspaceRouter.post("/:workspaceId/assets", imageUpload, asyncHandler(uploadAssetHandler));

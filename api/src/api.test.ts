@@ -162,4 +162,40 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     const served = await fetch(`${baseUrl}/s/${state.siteSlug}`);
     expect(served.status).toBe(404);
   });
+
+  it("uploads an image asset and serves it via StorageService", async () => {
+    // A minimal valid 1x1 transparent PNG.
+    const png = Buffer.from(
+      "89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489" +
+        "0000000d49444154789c6360000002000100ffff03000006000557bfabd4" +
+        "0000000049454e44ae426082",
+      "hex",
+    );
+    const form = new FormData();
+    form.append("file", new Blob([png], { type: "image/png" }), "pixel.png");
+    const res = await fetch(`${baseUrl}/api/workspaces/${state.workspaceId}/assets`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${state.accessToken}` },
+      body: form,
+    });
+    expect(res.status).toBe(201);
+    const asset = await json(res);
+    expect(asset.url).toContain("/uploads/");
+    expect(asset.mimeType).toBe("image/png");
+
+    const served = await fetch(`${baseUrl}${new URL(asset.url).pathname}`);
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toContain("image/png");
+  });
+
+  it("rejects a non-image upload", async () => {
+    const form = new FormData();
+    form.append("file", new Blob(["hello"], { type: "text/plain" }), "note.txt");
+    const res = await fetch(`${baseUrl}/api/workspaces/${state.workspaceId}/assets`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${state.accessToken}` },
+      body: form,
+    });
+    expect(res.status).toBe(400);
+  });
 });

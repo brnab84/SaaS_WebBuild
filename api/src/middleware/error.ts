@@ -25,6 +25,11 @@ export function errorHandler(
     res.status(400).json({ error: "Validation failed", details: err.flatten() });
     return;
   }
+  // multer upload errors (e.g. file too large) -> 400.
+  if (typeof err === "object" && err !== null && (err as { name?: string }).name === "MulterError") {
+    res.status(400).json({ error: (err as Error).message });
+    return;
+  }
   // Mongo duplicate key (e.g. unique slug/email).
   if (typeof err === "object" && err !== null && (err as { code?: number }).code === 11000) {
     res.status(409).json({ error: "Resource already exists" });

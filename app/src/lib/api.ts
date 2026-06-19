@@ -1,4 +1,5 @@
 import type {
+  AssetDTO,
   AuthResponse,
   BrandKit,
   CreatePageInput,
@@ -129,6 +130,30 @@ export const brandKitApi = {
       body: patch,
     }),
 };
+
+/**
+ * Upload an image asset (multipart). Uses FormData, so we don't set
+ * content-type (the browser adds the boundary). Retries once after refresh.
+ */
+export async function uploadAsset(workspaceId: string, file: File): Promise<AssetDTO> {
+  const form = new FormData();
+  form.append("file", file);
+  const path = `/api/workspaces/${workspaceId}/assets`;
+  const send = () => {
+    const token = useAuthStore.getState().accessToken;
+    return fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: token ? { authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+  };
+  let res = await send();
+  if (res.status === 401 && (await tryRefresh())) res = await send();
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : undefined;
+  if (!res.ok) throw new ApiError(res.status, data?.error ?? "Upload failed", data?.details);
+  return data as AssetDTO;
+}
 
 /**
  * Fetch rendered preview HTML with auth (the iframe can't send headers, so we

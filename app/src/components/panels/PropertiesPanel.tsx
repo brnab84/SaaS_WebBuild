@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SIZES, type Block } from "@webforge/shared";
 import { useEditorStore } from "../../store/editor.js";
 import { findNode } from "../../lib/tree.js";
+import { AssetUpload } from "./AssetUpload.js";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -173,6 +174,9 @@ function FieldsForBlock({ block }: { block: Block }) {
     case "image":
       return (
         <>
+          <Row label="Image">
+            <AssetUpload onUploaded={(url) => set({ src: url })} />
+          </Row>
           <Row label="Image URL">
             <Text value={block.props.src} onChange={(v) => set({ src: v })} />
           </Row>

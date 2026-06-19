@@ -3,6 +3,7 @@ import { authRouter } from "./auth.routes.js";
 import { workspaceRouter } from "./workspace.routes.js";
 import { siteRouter } from "./site.routes.js";
 import { pageRouter } from "./page.routes.js";
+import { assetRouter } from "./asset.routes.js";
 
 /** All authenticated/JSON API routes, mounted under /api. */
 export const apiRouter = Router();
@@ -15,3 +16,4 @@ apiRouter.use("/auth", authRouter);
 apiRouter.use("/workspaces", workspaceRouter);
 apiRouter.use("/sites", siteRouter);
 apiRouter.use("/pages", pageRouter);
+apiRouter.use("/assets", assetRouter);

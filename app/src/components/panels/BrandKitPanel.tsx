@@ -1,5 +1,6 @@
 import type { BrandColors } from "@webforge/shared";
 import { useEditorStore } from "../../store/editor.js";
+import { AssetUpload } from "./AssetUpload.js";
 
 const COLOR_LABELS: Record<keyof BrandColors, string> = {
   primary: "Primary",
@@ -24,6 +25,30 @@ export function BrandKitPanel() {
 
   return (
     <div className="space-y-4">
+      <div>
+        <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Logo
+        </h3>
+        <div className="space-y-2 px-1 pt-1">
+          {brandKit.logo && (
+            <img
+              src={brandKit.logo}
+              alt="Brand logo"
+              className="max-h-16 rounded border border-slate-200 bg-slate-50 p-1"
+            />
+          )}
+          <AssetUpload onUploaded={(url) => update({ logo: url })} label="Upload logo" />
+          {brandKit.logo && (
+            <button
+              onClick={() => update({ logo: null })}
+              className="text-xs text-slate-400 hover:text-rose-600"
+            >
+              Remove logo
+            </button>
+          )}
+        </div>
+      </div>
+
       <div>
         <h3 className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
           Colors

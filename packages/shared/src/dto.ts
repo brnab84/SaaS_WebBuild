@@ -118,6 +118,20 @@ export interface PageDTO {
   updatedAt: string;
 }
 
+/* --------------------------------- assets --------------------------------- */
+
+export interface AssetDTO {
+  id: string;
+  workspace: string;
+  filename: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+}
+
 /* --------------------------------- brandkit ------------------------------- */
 
 export const updateBrandKitSchema = brandKitSchema.partial();
