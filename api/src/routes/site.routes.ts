@@ -22,6 +22,7 @@ import {
   publishHandler,
   unpublishHandler,
 } from "../controllers/publish.controller.js";
+import { exportSiteHandler } from "../controllers/export.controller.js";
 
 export const siteRouter = Router();
 
@@ -39,3 +40,6 @@ siteRouter.post("/:id/pages", validate(createPageSchema), asyncHandler(createPag
 
 siteRouter.post("/:id/publish", asyncHandler(publishHandler));
 siteRouter.post("/:id/unpublish", asyncHandler(unpublishHandler));
+
+// Phase 5 — download a static HTML/CSS export (no lock-in).
+siteRouter.get("/:id/export", asyncHandler(exportSiteHandler));

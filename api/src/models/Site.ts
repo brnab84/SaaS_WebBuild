@@ -11,6 +11,7 @@ export interface SiteDoc {
   status: "draft" | "published";
   publishedAt: Date | null;
   homePage: mongoose.Types.ObjectId | null;
+  customDomain: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +29,7 @@ const siteSchema = new Schema<SiteDoc>(
     status: { type: String, enum: ["draft", "published"], default: "draft", index: true },
     publishedAt: { type: Date, default: null },
     homePage: { type: Schema.Types.ObjectId, ref: "Page", default: null },
+    customDomain: { type: String, default: null },
   },
   baseSchemaOptions(),
 );
@@ -35,5 +37,7 @@ const siteSchema = new Schema<SiteDoc>(
 // Slug is globally addressable for serving published sites (/s/:slug), so it is
 // globally unique. (workspace is indexed above for listing a workspace's sites.)
 siteSchema.index({ slug: 1 }, { unique: true });
+// Custom domain is globally unique when set (sparse — many sites have none).
+siteSchema.index({ customDomain: 1 }, { unique: true, sparse: true });
 
 export const Site = model<SiteDoc>("Site", siteSchema);

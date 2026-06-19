@@ -1,5 +1,7 @@
 import { env } from "../../config/env.js";
+import { createR2Client } from "../r2-client.js";
 import { LocalPublishService } from "./LocalPublishService.js";
+import { R2PublishService } from "./R2PublishService.js";
 import type { PublishService } from "./PublishService.js";
 
 export type {
@@ -17,9 +19,17 @@ function createPublishService(): PublishService {
         rootDir: env.PUBLISH_LOCAL_DIR,
         publicBaseUrl: env.PUBLIC_URL,
       });
-    case "cloudflare-pages":
-      // Phase 5: deploy static output to Cloudflare Pages + custom domains/SSL.
-      throw new Error("PUBLISH_DRIVER=cloudflare-pages is not implemented yet (Phase 5).");
+    case "r2":
+      // Productive publishing: render to static HTML in an R2 bucket served by
+      // Cloudflare (custom domains + automatic SSL).
+      if (!env.R2_PUBLISH_BUCKET || !env.R2_PUBLISH_PUBLIC_URL) {
+        throw new Error("PUBLISH_DRIVER=r2 requires R2_PUBLISH_BUCKET and R2_PUBLISH_PUBLIC_URL");
+      }
+      return new R2PublishService(
+        createR2Client(),
+        env.R2_PUBLISH_BUCKET,
+        env.R2_PUBLISH_PUBLIC_URL,
+      );
     default:
       throw new Error(`Unknown PUBLISH_DRIVER: ${env.PUBLISH_DRIVER}`);
   }

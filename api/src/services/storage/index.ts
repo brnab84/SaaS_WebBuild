@@ -1,5 +1,7 @@
 import { env } from "../../config/env.js";
+import { createR2Client } from "../r2-client.js";
 import { LocalStorageService } from "./LocalStorageService.js";
+import { R2StorageService } from "./R2StorageService.js";
 import type { StorageService } from "./StorageService.js";
 
 export type { StorageService, StoredObject } from "./StorageService.js";
@@ -15,8 +17,10 @@ function createStorageService(): StorageService {
         publicBaseUrl: env.PUBLIC_URL,
       });
     case "r2":
-      // Phase 5: return new R2StorageService(...). Interface is identical.
-      throw new Error("STORAGE_DRIVER=r2 is not implemented yet (Phase 5).");
+      if (!env.R2_BUCKET || !env.R2_PUBLIC_URL) {
+        throw new Error("STORAGE_DRIVER=r2 requires R2_BUCKET and R2_PUBLIC_URL");
+      }
+      return new R2StorageService(createR2Client(), env.R2_BUCKET, env.R2_PUBLIC_URL);
     default:
       throw new Error(`Unknown STORAGE_DRIVER: ${env.STORAGE_DRIVER}`);
   }

@@ -21,6 +21,7 @@ export function toSiteDTO(site: SiteDoc): SiteDTO {
     slug: site.slug,
     status: site.status,
     publishedAt: site.publishedAt ? site.publishedAt.toISOString() : null,
+    customDomain: site.customDomain ?? null,
     createdAt: site.createdAt.toISOString(),
     updatedAt: site.updatedAt.toISOString(),
   };
@@ -101,6 +102,13 @@ export async function updateSite(
     const slug = slugify(input.slug);
     if (await Site.exists({ slug, _id: { $ne: site._id } })) throw conflict("Slug already in use");
     site.slug = slug;
+  }
+  if (input.customDomain !== undefined) {
+    const domain = input.customDomain ? input.customDomain.toLowerCase().trim() : null;
+    if (domain && (await Site.exists({ customDomain: domain, _id: { $ne: site._id } }))) {
+      throw conflict("Domain already in use");
+    }
+    site.customDomain = domain;
   }
   await site.save();
   return toSiteDTO(site);

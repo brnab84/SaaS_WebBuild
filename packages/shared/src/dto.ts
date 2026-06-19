@@ -79,6 +79,13 @@ export const updateSiteSchema = z
       .max(80)
       .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/)
       .optional(),
+    // Phase 5 — custom domain (null clears it).
+    customDomain: z
+      .string()
+      .regex(/^(?:[a-z0-9-]+\.)+[a-z]{2,}$/i, "Invalid domain")
+      .max(253)
+      .nullable()
+      .optional(),
   })
   .refine((v) => Object.keys(v).length > 0, "Empty update");
 export type UpdateSiteInput = z.infer<typeof updateSiteSchema>;
@@ -90,6 +97,7 @@ export interface SiteDTO {
   slug: string;
   status: "draft" | "published";
   publishedAt: string | null;
+  customDomain: string | null;
   createdAt: string;
   updatedAt: string;
 }

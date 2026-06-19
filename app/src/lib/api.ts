@@ -24,6 +24,7 @@ import type {
   UpdateBrandKitInput,
   UpdateEventInput,
   UpdateProductInput,
+  UpdateSiteInput,
 } from "@webforge/shared";
 import { useAuthStore } from "../store/auth.js";
 
@@ -118,6 +119,8 @@ export const siteApi = {
       body: input,
     }),
   get: (siteId: string) => request<SiteDTO>(`/api/sites/${siteId}`),
+  update: (siteId: string, input: UpdateSiteInput) =>
+    request<SiteDTO>(`/api/sites/${siteId}`, { method: "PATCH", body: input }),
   remove: (siteId: string) => request<void>(`/api/sites/${siteId}`, { method: "DELETE" }),
   publish: (siteId: string) =>
     request<{ url: string; pages: number; site: SiteDTO }>(`/api/sites/${siteId}/publish`, {
@@ -225,6 +228,16 @@ export async function uploadAsset(workspaceId: string, file: File): Promise<Asse
   const data = text ? JSON.parse(text) : undefined;
   if (!res.ok) throw new ApiError(res.status, data?.error ?? "Upload failed", data?.details);
   return data as AssetDTO;
+}
+
+/** Download the site's static export as a Blob (authorized). */
+export async function exportSite(siteId: string): Promise<Blob> {
+  const token = useAuthStore.getState().accessToken;
+  const res = await fetch(`${BASE}/api/sites/${siteId}/export`, {
+    headers: token ? { authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new ApiError(res.status, "Export failed");
+  return res.blob();
 }
 
 /**

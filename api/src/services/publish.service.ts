@@ -1,4 +1,5 @@
 import type { Block, SiteDTO } from "@webforge/shared";
+import { Site } from "../models/Site.js";
 import { badRequest } from "../utils/http-error.js";
 import { requireSite } from "./access.service.js";
 import { brandKitForSite } from "./brandkit.service.js";
@@ -62,4 +63,19 @@ export async function readPublishedPage(
 ): Promise<string | null> {
   if (typeof publishService.read !== "function") return null;
   return publishService.read(siteSlug, pageSlug);
+}
+
+/**
+ * Resolve a request to a published site by its custom domain (Phase 5). Returns
+ * the page HTML, or null if no published site claims that hostname.
+ */
+export async function serveCustomDomainPage(
+  hostname: string,
+  path: string,
+): Promise<string | null> {
+  const site = await Site.findOne({ customDomain: hostname, status: "published" });
+  if (!site) return null;
+  const pageSlug =
+    path === "/" || path === "" ? "" : path.replace(/^\//, "").replace(/\.html$/, "");
+  return readPublishedPage(site.slug, pageSlug);
 }

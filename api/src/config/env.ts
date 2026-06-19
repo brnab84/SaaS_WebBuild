@@ -25,8 +25,19 @@ const envSchema = z.object({
   STORAGE_LOCAL_DIR: z.string().default("./data/storage"),
   STORAGE_PUBLIC_PATH: z.string().default("/uploads"),
 
-  PUBLISH_DRIVER: z.enum(["local", "cloudflare-pages"]).default("local"),
+  PUBLISH_DRIVER: z.enum(["local", "r2"]).default("local"),
   PUBLISH_LOCAL_DIR: z.string().default("./data/published"),
+
+  // --- Cloudflare R2 (Phase 5: productive storage + publishing) ---
+  // Assets and published sites are uploaded to R2 (S3-compatible) and served by
+  // Cloudflare's network with custom domains + automatic SSL.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().optional(), // assets bucket
+  R2_PUBLIC_URL: z.string().optional(), // public base URL for the assets bucket
+  R2_PUBLISH_BUCKET: z.string().optional(), // published-sites bucket
+  R2_PUBLISH_PUBLIC_URL: z.string().optional(), // public base URL for published sites
 
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default("claude-opus-4-8"),

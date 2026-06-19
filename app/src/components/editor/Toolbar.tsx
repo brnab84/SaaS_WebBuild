@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { siteApi } from "../../lib/api.js";
+import { exportSite, siteApi } from "../../lib/api.js";
 import { useEditorStore, type Breakpoint, type SaveStatus } from "../../store/editor.js";
 
 const BREAKPOINTS: { id: Breakpoint; label: string; icon: string }[] = [
@@ -56,6 +56,39 @@ export function Toolbar() {
     }
   }
 
+  async function exportCode() {
+    if (!site) return;
+    setBusy(true);
+    try {
+      const blob = await exportSite(site.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${site.slug}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setDomain() {
+    if (!site) return;
+    const next = window.prompt(
+      "Custom domain (e.g. shop.example.com) — leave blank to remove",
+      site.customDomain ?? "",
+    );
+    if (next == null) return;
+    try {
+      const updated = await siteApi.update(site.id, {
+        customDomain: next.trim() ? next.trim().toLowerCase() : null,
+      });
+      setSite(updated);
+    } catch {
+      window.alert("Could not update the domain (already in use or invalid).");
+    }
+  }
+
   return (
     <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-2">
       <div className="flex min-w-0 items-center gap-3">
@@ -105,6 +138,23 @@ export function Toolbar() {
             Preview
           </button>
         </div>
+
+        <button
+          onClick={setDomain}
+          className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          title={site.customDomain ? `Custom domain: ${site.customDomain}` : "Set a custom domain"}
+        >
+          {site.customDomain ? `🌐 ${site.customDomain}` : "🌐 Domain"}
+        </button>
+
+        <button
+          onClick={exportCode}
+          disabled={busy}
+          className="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          title="Download static HTML/CSS (no lock-in)"
+        >
+          ⬇ Export
+        </button>
 
         {published && (
           <a

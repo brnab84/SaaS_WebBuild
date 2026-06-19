@@ -9,6 +9,7 @@ import { publicRouter } from "./routes/public.routes.js";
 import { checkoutPagesRouter } from "./routes/checkout-pages.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import { webhookHandler } from "./controllers/checkout.controller.js";
+import { serveCustomDomainPage } from "./services/publish.service.js";
 import { asyncHandler } from "./utils/async-handler.js";
 import { storageService, LocalStorageService } from "./services/storage/index.js";
 import { logger } from "./utils/logger.js";
@@ -49,6 +50,27 @@ export function createApp(): express.Express {
       next();
     });
   }
+
+  // Custom-domain serving (Phase 5): if the request's Host matches a published
+  // site's custom domain, serve that site directly. Skips the app's own host.
+  const appHost = new URL(env.PUBLIC_URL).hostname;
+  app.use(
+    asyncHandler(async (req, res, next) => {
+      const host = req.hostname;
+      if (
+        req.method !== "GET" ||
+        !host ||
+        host === appHost ||
+        host === "localhost" ||
+        host === "127.0.0.1"
+      ) {
+        return next();
+      }
+      const html = await serveCustomDomainPage(host, req.path);
+      if (html == null) return next();
+      res.type("html").send(html);
+    }),
+  );
 
   // Serve uploaded assets (StorageService local driver).
   if (storageService instanceof LocalStorageService) {

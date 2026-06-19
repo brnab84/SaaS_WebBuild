@@ -1,4 +1,4 @@
-import type { Server } from "node:http";
+import http, { type Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import type { PageDTO } from "@webforge/shared";
@@ -8,6 +8,23 @@ import { connectDB, disconnectDB } from "./db/connect.js";
 let mongo: MongoMemoryServer;
 let server: Server;
 let baseUrl: string;
+let serverPort = 0;
+
+/** Raw GET with a custom Host header (fetch forbids setting Host). */
+function rawGet(path: string, host: string): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { host: "127.0.0.1", port: serverPort, path, method: "GET", headers: { Host: host } },
+      (res) => {
+        let body = "";
+        res.on("data", (c) => (body += c));
+        res.on("end", () => resolve({ status: res.statusCode ?? 0, body }));
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 // Shared state threaded through the sequential flow.
 const state: {
@@ -43,8 +60,8 @@ beforeAll(async () => {
     server = app.listen(0, () => resolve());
   });
   const addr = server.address();
-  const port = typeof addr === "object" && addr ? addr.port : 0;
-  baseUrl = `http://127.0.0.1:${port}`;
+  serverPort = typeof addr === "object" && addr ? addr.port : 0;
+  baseUrl = `http://127.0.0.1:${serverPort}`;
 }, 120_000);
 
 afterAll(async () => {
@@ -400,5 +417,36 @@ describe("WebForge API end-to-end (Phase 1)", () => {
   it("deletes an event", async () => {
     const res = await api(`/api/events/${ev.eventId}`, { method: "DELETE" });
     expect(res.status).toBe(204);
+  });
+
+  /* ------------------- Phase 5: export + custom domains ----------------- */
+
+  it("exports the site as a static HTML ZIP", async () => {
+    const res = await api(`/api/sites/${state.siteId}/export`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/zip");
+    const buf = Buffer.from(await res.arrayBuffer());
+    expect(buf.subarray(0, 2).toString("latin1")).toBe("PK"); // ZIP magic bytes
+    expect(buf.byteLength).toBeGreaterThan(100);
+  });
+
+  it("serves a published site by its custom domain (Host header)", async () => {
+    // Re-publish (an earlier test unpublished it) and attach a custom domain.
+    await api(`/api/sites/${state.siteId}/publish`, { method: "POST" });
+    const patched = await json<{ customDomain: string }>(
+      await api(`/api/sites/${state.siteId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ customDomain: "shop.example.com" }),
+      }),
+    );
+    expect(patched.customDomain).toBe("shop.example.com");
+
+    const served = await rawGet("/", "shop.example.com");
+    expect(served.status).toBe(200);
+    expect(served.body).toContain("Hello QA"); // the home page edited earlier
+
+    // An unknown domain falls through to the normal app (not the site).
+    const unknown = await rawGet("/", "nobody.example.com");
+    expect(unknown.body).not.toContain("Hello QA");
   });
 });
