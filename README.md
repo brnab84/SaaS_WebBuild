@@ -78,8 +78,11 @@ membership (`user → workspace → N sites → N pages`).
   behind the same interface.
 - **`StorageService`** — `put/get/remove/url`. MVP uses local disk (`/uploads`); Phase 5
   swaps in Cloudflare R2.
+- **`PaymentService`** — `createCheckout` / `verifyWebhook`. `mock` (local, no keys),
+  `stripe`, and `mercadopago` drivers behind one interface.
 
-Both are selected by env (`PUBLISH_DRIVER`, `STORAGE_DRIVER`) and exposed as singletons.
+Selected by env (`PUBLISH_DRIVER`, `STORAGE_DRIVER`, `PAYMENT_DRIVER`) and exposed as
+singletons.
 
 ### Built to scale from Phase 1
 
@@ -183,6 +186,10 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 | `POST` | `/api/sites/:id/publish` · `/unpublish` | Publish / unpublish |
 | `POST` | `/api/workspaces/:id/assets` · `GET` | Upload / list image assets |
 | `POST` | `/api/workspaces/:id/generate-site` | **AI** — build a full site from a business prompt |
+| `GET/POST` | `/api/workspaces/:id/products` · `/api/products/:id` | Product CRUD |
+| `GET` | `/api/workspaces/:id/orders` | List orders (admin) |
+| `POST` | `/api/storefront/:siteId/checkout` | **Public** checkout → payment redirect URL |
+| `POST` | `/api/payments/webhook` | **Public** provider webhook (Stripe/MP) |
 | `GET` | `/s/:siteSlug[/:pageSlug]` | **Public** published site (no auth) |
 
 ---
@@ -195,7 +202,10 @@ Everything runs in **one Express deploy**: API + editor + preview/publish.
 - **Phase 2 (done):** AI site generation — a business prompt → structured plan (Claude,
   forced tool use) → full site (pages + copy + palette + fonts) + a monogram logo maker.
   Set `ANTHROPIC_API_KEY` to enable; the endpoint degrades gracefully (501) without it.
-- **Phase 3:** e-commerce checkout (Mercado Pago / Stripe). Models are already in place.
+- **Phase 3 (done):** e-commerce — product CRUD, public storefront checkout with
+  server-side pricing, and a `PaymentService` abstraction with three drivers
+  (`mock` by default — works with no keys; `stripe` and `mercadopago` real
+  integrations) selected by `PAYMENT_DRIVER`. Orders + provider webhooks included.
 - **Phase 4:** events + RSVP + forms. Models are already in place.
 - **Phase 5:** productive publishing (Cloudflare Pages + R2, custom domains + SSL),
   real code export.

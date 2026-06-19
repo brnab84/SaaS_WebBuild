@@ -63,12 +63,17 @@ Per-package typecheck: `npm run typecheck --workspace @webforge/<pkg>` (or `npx 
 
 ## Phasing
 
-Phases 1 (MVP) and 2 (AI site generation + logo maker) are implemented. The AI service
-lives in `api/src/services/ai/` — Claude returns a **flat** plan via forced `tool_use`
-(structured outputs needs zod v4; we're on v3, so tool_use keeps it version-safe), and the
-pure `buildSiteFromPlan` turns that plan into a valid block tree. Set `ANTHROPIC_API_KEY`
-to enable; without it the endpoint returns 501.
+Phases 1 (MVP), 2 (AI generation + logo maker) and 3 (e-commerce) are implemented.
 
-Later phases (e-commerce, events, productive publishing/export) should only have
-**architecture prepared** — `Product`/`Order`/`Event` models and the publish/storage seams
-already exist; don't implement that logic yet unless asked.
+- **AI** lives in `api/src/services/ai/` — Claude returns a **flat** plan via forced
+  `tool_use` (structured outputs needs zod v4; we're on v3, so tool_use keeps it
+  version-safe), and the pure `buildSiteFromPlan` turns it into a valid block tree.
+  `ANTHROPIC_API_KEY` enables it; otherwise the endpoint returns 501.
+- **Payments** follow the same migration-seam pattern as publish/storage:
+  `PaymentService` (`api/src/services/payment/`) with `mock`/`stripe`/`mercadopago`
+  drivers selected by `PAYMENT_DRIVER` (default `mock`, no keys needed). Checkout prices
+  are always computed server-side from the DB; the webhook route uses the raw body.
+
+Later phases (events/RSVP, productive publishing/export) should only have **architecture
+prepared** — the `Event` model and the publish/storage seams already exist; don't
+implement that logic yet unless asked.
