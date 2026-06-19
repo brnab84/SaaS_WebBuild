@@ -1,0 +1,32 @@
+{
+  "name": "webforge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WebForge — AI-first all-in-one website builder (multi-tenant SaaS).",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*",
+    "renderer",
+    "api",
+    "app"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:api dev:app",
+    "dev:api": "npm run dev --workspace @webforge/api",
+    "dev:app": "npm run dev --workspace @webforge/app",
+    "build": "npm run build --workspace @webforge/app",
+    "start": "npm run start --workspace @webforge/api",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "tsc -b --noEmit || true",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
