@@ -21,9 +21,34 @@ export type Size = z.infer<typeof sizeEnum>;
 export const alignEnum = z.enum(["left", "center", "right"]);
 export type Align = z.infer<typeof alignEnum>;
 
-export const BLOCK_TYPES = ["section", "hero", "text", "image", "button"] as const;
+export const BLOCK_TYPES = [
+  "section",
+  "hero",
+  "text",
+  "image",
+  "button",
+  "products",
+  "events",
+  "form",
+] as const;
 export const blockTypeEnum = z.enum(BLOCK_TYPES);
 export type BlockType = z.infer<typeof blockTypeEnum>;
+
+/** Lightweight, render-ready shapes injected into dynamic blocks before render. */
+export interface ProductLite {
+  id: string;
+  title: string;
+  priceCents: number;
+  currency: string;
+  image: string | null;
+}
+export interface EventLite {
+  id: string;
+  title: string;
+  startsAt: string;
+  location: string;
+  spotsLeft: number | null;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Per-block prop schemas                                                      */
@@ -77,6 +102,32 @@ export const buttonPropsSchema = z.object({
 });
 export type ButtonProps = z.infer<typeof buttonPropsSchema>;
 
+export const productsPropsSchema = z.object({
+  title: z.string().default("Our products"),
+  subtitle: z.string().default(""),
+  columns: z.enum(["2", "3", "4"]).default("3"),
+  limit: z.number().int().min(1).max(48).default(12),
+});
+/** `_items` is injected at render time by the API; not part of the saved tree. */
+export type ProductsProps = z.infer<typeof productsPropsSchema> & { _items?: ProductLite[] };
+
+export const eventsPropsSchema = z.object({
+  title: z.string().default("Upcoming events"),
+  subtitle: z.string().default(""),
+  limit: z.number().int().min(1).max(48).default(6),
+});
+export type EventsProps = z.infer<typeof eventsPropsSchema> & { _items?: EventLite[] };
+
+export const formPropsSchema = z.object({
+  title: z.string().default("Get in touch"),
+  subtitle: z.string().default("We'd love to hear from you."),
+  formName: z.string().default("contact"),
+  submitLabel: z.string().default("Send message"),
+  successMessage: z.string().default("Thanks! We'll be in touch soon."),
+});
+/** `_siteId` is injected at render time so the static form can POST to the API. */
+export type FormProps = z.infer<typeof formPropsSchema> & { _siteId?: string };
+
 /* -------------------------------------------------------------------------- */
 /* Recursive block tree                                                        */
 /* -------------------------------------------------------------------------- */
@@ -105,7 +156,27 @@ export interface ButtonBlock extends BlockBase {
   type: "button";
   props: ButtonProps;
 }
-export type Block = SectionBlock | HeroBlock | TextBlock | ImageBlock | ButtonBlock;
+export interface ProductsBlock extends BlockBase {
+  type: "products";
+  props: ProductsProps;
+}
+export interface EventsBlock extends BlockBase {
+  type: "events";
+  props: EventsProps;
+}
+export interface FormBlock extends BlockBase {
+  type: "form";
+  props: FormProps;
+}
+export type Block =
+  | SectionBlock
+  | HeroBlock
+  | TextBlock
+  | ImageBlock
+  | ButtonBlock
+  | ProductsBlock
+  | EventsBlock
+  | FormBlock;
 
 const childrenSchema = z.array(z.lazy((): z.ZodType<Block> => blockSchema)).default([]);
 
@@ -139,6 +210,24 @@ const buttonSchema = z.object({
   props: buttonPropsSchema,
   children: childrenSchema,
 });
+const productsSchema = z.object({
+  id: z.string(),
+  type: z.literal("products"),
+  props: productsPropsSchema,
+  children: childrenSchema,
+});
+const eventsSchema = z.object({
+  id: z.string(),
+  type: z.literal("events"),
+  props: eventsPropsSchema,
+  children: childrenSchema,
+});
+const formSchema = z.object({
+  id: z.string(),
+  type: z.literal("form"),
+  props: formPropsSchema,
+  children: childrenSchema,
+});
 
 export const blockSchema: z.ZodType<Block> = z.lazy(() =>
   z.discriminatedUnion("type", [
@@ -147,6 +236,9 @@ export const blockSchema: z.ZodType<Block> = z.lazy(() =>
     textSchema,
     imageSchema,
     buttonSchema,
+    productsSchema,
+    eventsSchema,
+    formSchema,
   ]),
 ) as z.ZodType<Block>;
 
@@ -170,6 +262,9 @@ const PROP_DEFAULTS: { [K in BlockType]: z.ZodTypeAny } = {
   text: textPropsSchema,
   image: imagePropsSchema,
   button: buttonPropsSchema,
+  products: productsPropsSchema,
+  events: eventsPropsSchema,
+  form: formPropsSchema,
 };
 
 /** Create a new block of `type` with schema-default props and a fresh id. */
@@ -201,4 +296,7 @@ export const BLOCK_LIBRARY: readonly BlockMeta[] = [
   { type: "text", label: "Text", description: "Paragraph or heading", icon: "T" },
   { type: "image", label: "Image", description: "Picture or graphic", icon: "▦" },
   { type: "button", label: "Button", description: "Link / action", icon: "⬚" },
+  { type: "products", label: "Products", description: "Store grid + checkout", icon: "🛍" },
+  { type: "events", label: "Events", description: "Event list + RSVP", icon: "📅" },
+  { type: "form", label: "Form", description: "Contact / lead form", icon: "✉" },
 ];

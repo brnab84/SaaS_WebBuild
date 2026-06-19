@@ -42,8 +42,9 @@ export class LocalPublishService implements PublishService {
     for (const page of pages) {
       const html = renderDocument({
         page: { title: page.title, tree: page.tree },
-        site: { name: site.name },
+        site: { name: site.name, id: site.id },
         brandKit,
+        options: { apiBase: input.apiBase },
       });
       const fileSlug = page.isHome ? "index" : page.slug;
       await fs.writeFile(join(dir, `${fileSlug}.html`), html, "utf8");

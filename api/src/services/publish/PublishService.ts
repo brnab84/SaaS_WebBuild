@@ -15,9 +15,11 @@ export interface PublishPageInput {
 }
 
 export interface PublishInput {
-  site: { slug: string; name: string };
+  site: { slug: string; name: string; id: string };
   brandKit: BrandKit;
   pages: PublishPageInput[];
+  /** Public API origin used by dynamic blocks in the published HTML. */
+  apiBase: string;
 }
 
 export interface PublishResult {

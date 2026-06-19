@@ -1,8 +1,10 @@
 import JSZip from "jszip";
 import type { Block } from "@webforge/shared";
 import { renderDocument } from "@webforge/renderer";
+import { env } from "../config/env.js";
 import { requireSite } from "./access.service.js";
 import { brandKitForSite } from "./brandkit.service.js";
+import { hydrateTree } from "./hydrate.service.js";
 import { pagesForPublish } from "./page.service.js";
 
 /**
@@ -20,12 +22,15 @@ export async function exportSiteZip(
     brandKitForSite(site._id.toString()),
   ]);
 
+  const workspaceId = site.workspace.toString();
   const zip = new JSZip();
   for (const page of pages) {
+    const tree = await hydrateTree(page.tree as Block, { workspaceId, siteId });
     const html = renderDocument({
-      page: { title: page.title, tree: page.tree as Block },
-      site: { name: site.name },
+      page: { title: page.title, tree },
+      site: { name: site.name, id: siteId },
       brandKit,
+      options: { apiBase: env.PUBLIC_URL },
     });
     const fileSlug = page.isHome ? "index" : page.slug;
     zip.file(`${fileSlug}.html`, html);

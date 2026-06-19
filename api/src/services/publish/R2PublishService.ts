@@ -27,8 +27,9 @@ export class R2PublishService implements PublishService {
     for (const page of pages) {
       const html = renderDocument({
         page: { title: page.title, tree: page.tree },
-        site: { name: site.name },
+        site: { name: site.name, id: site.id },
         brandKit,
+        options: { apiBase: input.apiBase },
       });
       const fileSlug = page.isHome ? "index" : page.slug;
       await this.s3.send(

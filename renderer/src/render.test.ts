@@ -81,6 +81,53 @@ describe("design-token propagation", () => {
   });
 });
 
+describe("dynamic blocks (products / events / form)", () => {
+  it("renders a form block that posts to the storefront", () => {
+    const form = makeBlock("form") as Extract<Block, { type: "form" }>;
+    form.props.title = "Contact us";
+    const { html } = renderTree(form);
+    expect(html).toContain("Contact us");
+    expect(html).toContain("<form");
+    expect(html).toContain("/forms/");
+    expect(html).toContain("<script>");
+  });
+
+  it("renders products from injected _items with a buy action", () => {
+    const products = makeBlock("products") as Extract<Block, { type: "products" }>;
+    products.props._items = [
+      { id: "p1", title: "Hoodie", priceCents: 4999, currency: "USD", image: null },
+    ];
+    const { html } = renderTree(products);
+    expect(html).toContain("Hoodie");
+    expect(html).toContain("USD 49.99");
+    expect(html).toContain('data-pid="p1"');
+    expect(html).toContain("/checkout");
+  });
+
+  it("renders events from injected _items with an RSVP form", () => {
+    const events = makeBlock("events") as Extract<Block, { type: "events" }>;
+    events.props._items = [
+      { id: "e1", title: "Launch", startsAt: new Date().toISOString(), location: "HQ", spotsLeft: 5 },
+    ];
+    const { html } = renderTree(events);
+    expect(html).toContain("Launch");
+    expect(html).toContain('data-eid="e1"');
+    expect(html).toContain("/rsvp");
+  });
+
+  it("emits the __WF bootstrap with site id + api base", () => {
+    const doc = renderDocument({
+      page: { title: "Shop", tree: makeBlock("products") },
+      site: { name: "Acme", id: "site123" },
+      brandKit: defaultBrandKit,
+      options: { apiBase: "https://api.example.com" },
+    });
+    expect(doc).toContain('window.__WF=');
+    expect(doc).toContain("site123");
+    expect(doc).toContain("https://api.example.com");
+  });
+});
+
 describe("renderDocument", () => {
   it("produces a complete, self-contained HTML document", () => {
     const tree = makeStarterTree();

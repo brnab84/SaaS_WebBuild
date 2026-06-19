@@ -45,6 +45,32 @@ function Area({ value, onChange }: { value: string; onChange: (v: string) => voi
   );
 }
 
+function Num({
+  value,
+  onChange,
+  min = 1,
+  max = 48,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      className={inputClass}
+      value={value}
+      onChange={(e) => {
+        const n = parseInt(e.target.value, 10);
+        if (Number.isFinite(n)) onChange(Math.max(min, Math.min(max, n)));
+      }}
+    />
+  );
+}
+
 function Select({
   value,
   options,
@@ -220,6 +246,60 @@ function FieldsForBlock({ block }: { block: Block }) {
           <Row label="Align">
             <Select value={block.props.align} options={ALIGN} onChange={(v) => set({ align: v })} />
           </Row>
+        </>
+      );
+    case "products":
+      return (
+        <>
+          <Row label="Title">
+            <Text value={block.props.title} onChange={(v) => set({ title: v })} />
+          </Row>
+          <Row label="Subtitle">
+            <Text value={block.props.subtitle} onChange={(v) => set({ subtitle: v })} />
+          </Row>
+          <Row label="Columns">
+            <Select value={block.props.columns} options={["2", "3", "4"]} onChange={(v) => set({ columns: v })} />
+          </Row>
+          <Row label="Max products">
+            <Num value={block.props.limit} onChange={(v) => set({ limit: v })} />
+          </Row>
+          <p className="px-1 text-[11px] text-slate-400">Shows your active products (managed in Store).</p>
+        </>
+      );
+    case "events":
+      return (
+        <>
+          <Row label="Title">
+            <Text value={block.props.title} onChange={(v) => set({ title: v })} />
+          </Row>
+          <Row label="Subtitle">
+            <Text value={block.props.subtitle} onChange={(v) => set({ subtitle: v })} />
+          </Row>
+          <Row label="Max events">
+            <Num value={block.props.limit} onChange={(v) => set({ limit: v })} />
+          </Row>
+          <p className="px-1 text-[11px] text-slate-400">Shows your events with an RSVP form (managed in Events).</p>
+        </>
+      );
+    case "form":
+      return (
+        <>
+          <Row label="Title">
+            <Text value={block.props.title} onChange={(v) => set({ title: v })} />
+          </Row>
+          <Row label="Subtitle">
+            <Area value={block.props.subtitle} onChange={(v) => set({ subtitle: v })} />
+          </Row>
+          <Row label="Form name">
+            <Text value={block.props.formName} onChange={(v) => set({ formName: v })} />
+          </Row>
+          <Row label="Button label">
+            <Text value={block.props.submitLabel} onChange={(v) => set({ submitLabel: v })} />
+          </Row>
+          <Row label="Success message">
+            <Area value={block.props.successMessage} onChange={(v) => set({ successMessage: v })} />
+          </Row>
+          <p className="px-1 text-[11px] text-slate-400">Submissions appear in the Events page inbox.</p>
         </>
       );
     default:

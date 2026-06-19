@@ -1,9 +1,11 @@
 import type { Block } from "@webforge/shared";
 import { renderDocument } from "@webforge/renderer";
+import { env } from "../config/env.js";
 import { Page } from "../models/Page.js";
 import { notFound } from "../utils/http-error.js";
 import { requireSite } from "./access.service.js";
 import { brandKitForSite } from "./brandkit.service.js";
+import { hydrateTree } from "./hydrate.service.js";
 
 /**
  * Render a DRAFT page to a full HTML document for the editor's live preview.
@@ -14,10 +16,15 @@ export async function renderPagePreview(pageId: string, userId: string): Promise
   if (!page) throw notFound("Page not found");
   const site = await requireSite(page.site.toString(), userId);
   const brandKit = await brandKitForSite(site._id.toString());
+  const tree = await hydrateTree(page.tree as Block, {
+    workspaceId: site.workspace.toString(),
+    siteId: site._id.toString(),
+  });
   return renderDocument({
-    page: { title: page.title, tree: page.tree as Block },
-    site: { name: site.name },
+    page: { title: page.title, tree },
+    site: { name: site.name, id: site._id.toString() },
     brandKit,
+    options: { apiBase: env.PUBLIC_URL },
   });
 }
 
@@ -31,10 +38,15 @@ export async function renderPreviewBySlug(
   const page = await Page.findOne({ site: site._id, slug: pageSlug });
   if (!page) throw notFound("Page not found");
   const brandKit = await brandKitForSite(site._id.toString());
+  const tree = await hydrateTree(page.tree as Block, {
+    workspaceId: site.workspace.toString(),
+    siteId: site._id.toString(),
+  });
   return renderDocument({
-    page: { title: page.title, tree: page.tree as Block },
-    site: { name: site.name },
+    page: { title: page.title, tree },
+    site: { name: site.name, id: site._id.toString() },
     brandKit,
+    options: { apiBase: env.PUBLIC_URL },
   });
 }
 

@@ -1,6 +1,6 @@
 import type { Block, BrandKit } from "@webforge/shared";
 import { brandKitToCssVars } from "@webforge/shared";
-import { escapeHtml } from "./escape.js";
+import { escapeAttr, escapeHtml } from "./escape.js";
 import { renderTree } from "./render.js";
 
 /** Minimal, opinionated reset so published pages look the same everywhere. */
@@ -35,14 +35,21 @@ export function googleFontsLink(kit: BrandKit): string {
 }
 
 export interface RenderPageInput {
-  page: { title: string; tree: Block };
-  site: { name: string };
+  page: { title: string; tree: Block; description?: string };
+  site: { name: string; id?: string };
   brandKit: BrandKit;
   options?: {
     /** Inject Google Fonts links (default true). */
     includeFonts?: boolean;
     lang?: string;
+    /** Public API origin used by dynamic blocks (products/events/form). */
+    apiBase?: string;
   };
+}
+
+/** JS string literal, safe to embed inside a <script> tag. */
+function jsString(value: string): string {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 /**
@@ -55,13 +62,25 @@ export function renderDocument(input: RenderPageInput): string {
   const lang = options?.lang ?? "en";
 
   const { html, css } = renderTree(page.tree);
+  const desc = page.description
+    ? `<meta name="description" content="${escapeAttr(page.description)}">`
+    : "";
   const head =
     `<meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
     `<title>${escapeHtml(page.title)} · ${escapeHtml(site.name)}</title>` +
+    desc +
     `<meta name="generator" content="WebForge">` +
     (includeFonts ? googleFontsLink(brandKit) : "") +
     `<style>${renderBrandKitVars(brandKit)}${RESET_CSS}${css}</style>`;
 
-  return `<!doctype html><html lang="${escapeHtml(lang)}"><head>${head}</head><body>${html}</body></html>`;
+  // Bootstrap dynamic blocks (products/events/form) with the site id + API base.
+  const bootstrap =
+    `<script>window.__WF={siteId:${jsString(site.id ?? "")},` +
+    `apiBase:${jsString(options?.apiBase ?? "")}};</script>`;
+
+  return (
+    `<!doctype html><html lang="${escapeHtml(lang)}"><head>${head}</head>` +
+    `<body>${bootstrap}${html}</body></html>`
+  );
 }

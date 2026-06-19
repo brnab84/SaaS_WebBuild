@@ -1,8 +1,10 @@
 import type { Block, SiteDTO } from "@webforge/shared";
+import { env } from "../config/env.js";
 import { Site } from "../models/Site.js";
 import { badRequest } from "../utils/http-error.js";
 import { requireSite } from "./access.service.js";
 import { brandKitForSite } from "./brandkit.service.js";
+import { hydrateTree } from "./hydrate.service.js";
 import { pagesForPublish } from "./page.service.js";
 import { publishService } from "./publish/index.js";
 import { toSiteDTO } from "./site.service.js";
@@ -24,15 +26,20 @@ export async function publishSite(
   if (pages.length === 0) throw badRequest("Site has no pages to publish");
 
   const brandKit = await brandKitForSite(site._id.toString());
-  const result = await publishService.publish({
-    site: { slug: site.slug, name: site.name },
-    brandKit,
-    pages: pages.map((p) => ({
+  const workspaceId = site.workspace.toString();
+  const hydratedPages = await Promise.all(
+    pages.map(async (p) => ({
       slug: p.slug,
       title: p.title,
-      tree: p.tree as Block,
+      tree: await hydrateTree(p.tree as Block, { workspaceId, siteId }),
       isHome: p.isHome,
     })),
+  );
+  const result = await publishService.publish({
+    site: { slug: site.slug, name: site.name, id: siteId },
+    brandKit,
+    pages: hydratedPages,
+    apiBase: env.PUBLIC_URL,
   });
 
   site.status = "published";

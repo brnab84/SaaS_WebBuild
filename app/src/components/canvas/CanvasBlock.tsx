@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { BLOCK_LIBRARY, type Block } from "@webforge/shared";
 import { useEditorStore } from "../../store/editor.js";
 import { blockStyle, sectionInnerStyle } from "./blockStyles.js";
+import { EventsCanvas, FormCanvas, ProductsCanvas } from "./DynamicBlocks.js";
 
 const label = (type: string) => BLOCK_LIBRARY.find((b) => b.type === type)?.label ?? type;
 
@@ -68,6 +69,12 @@ function BlockVisual({ block }: { block: Block }) {
           <span style={blockStyle(block)}>{block.props.label}</span>
         </div>
       );
+    case "products":
+      return <ProductsCanvas props={block.props} />;
+    case "events":
+      return <EventsCanvas props={block.props} />;
+    case "form":
+      return <FormCanvas props={block.props} />;
     default:
       return null;
   }
