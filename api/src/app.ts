@@ -17,12 +17,36 @@ import { logger } from "./utils/logger.js";
 export function createApp(): express.Express {
   const app = express();
 
-  // CSP is intentionally off: published pages carry their own inline styles and
-  // load Google Fonts; the preview iframe must also render freely. Re-enable a
-  // tailored policy in Phase 5 (productive publishing).
+  // Tailored CSP. Published pages and the srcdoc preview carry inline styles and
+  // inline <script> (the storefront blocks + the window.__WF bootstrap), and load
+  // Google Fonts — so 'unsafe-inline' for script/style is unavoidable by design.
+  // We still lock down object/base/frame-ancestors and constrain where dynamic
+  // blocks may fetch (the API origin, possibly a different host for custom domains)
+  // and where images/fonts may load from.
+  const connectSrc = [
+    "'self'",
+    env.PUBLIC_URL,
+    env.R2_PUBLIC_URL,
+    env.R2_PUBLISH_PUBLIC_URL,
+  ].filter((v): v is string => Boolean(v));
   app.use(
     helmet({
-      contentSecurityPolicy: false,
+      contentSecurityPolicy: {
+        useDefaults: false,
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrcAttr: ["'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+          imgSrc: ["'self'", "data:", "blob:", "https:"],
+          connectSrc,
+          frameSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          frameAncestors: ["'self'"],
+        },
+      },
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: "cross-origin" },
     }),

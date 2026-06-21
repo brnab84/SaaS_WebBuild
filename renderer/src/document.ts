@@ -62,14 +62,25 @@ export function renderDocument(input: RenderPageInput): string {
   const lang = options?.lang ?? "en";
 
   const { html, css } = renderTree(page.tree);
-  const desc = page.description
-    ? `<meta name="description" content="${escapeAttr(page.description)}">`
-    : "";
+
+  const fullTitle = `${page.title} · ${site.name}`;
+  const desc = page.description?.trim();
+  // Meta description + Open Graph / Twitter cards for richer link previews.
+  const social =
+    (desc ? `<meta name="description" content="${escapeAttr(desc)}">` : "") +
+    `<meta property="og:type" content="website">` +
+    `<meta property="og:site_name" content="${escapeAttr(site.name)}">` +
+    `<meta property="og:title" content="${escapeAttr(fullTitle)}">` +
+    (desc ? `<meta property="og:description" content="${escapeAttr(desc)}">` : "") +
+    `<meta name="twitter:card" content="summary">` +
+    `<meta name="twitter:title" content="${escapeAttr(fullTitle)}">` +
+    (desc ? `<meta name="twitter:description" content="${escapeAttr(desc)}">` : "");
+
   const head =
     `<meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width, initial-scale=1">` +
-    `<title>${escapeHtml(page.title)} · ${escapeHtml(site.name)}</title>` +
-    desc +
+    `<title>${escapeHtml(fullTitle)}</title>` +
+    social +
     `<meta name="generator" content="WebForge">` +
     (includeFonts ? googleFontsLink(brandKit) : "") +
     `<style>${renderBrandKitVars(brandKit)}${RESET_CSS}${css}</style>`;
