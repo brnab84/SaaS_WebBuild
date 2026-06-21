@@ -1,6 +1,7 @@
 import type {
   AdminSiteRow,
   AdminStats,
+  AdminUpdateUserInput,
   AdminUserRow,
   AdminWorkspaceRow,
   AssetDTO,
@@ -221,6 +222,14 @@ export const adminApi = {
     request<Paginated<AdminWorkspaceRow>>(`/api/admin/workspaces?page=${page}&limit=100`),
   sites: (page = 1) => request<Paginated<AdminSiteRow>>(`/api/admin/sites?page=${page}&limit=100`),
   deleteSite: (id: string) => request<void>(`/api/admin/sites/${id}`, { method: "DELETE" }),
+  updateUser: (id: string, patch: AdminUpdateUserInput) =>
+    request<AdminUserRow>(`/api/admin/users/${id}`, { method: "PATCH", body: patch }),
+  resetUserPassword: (id: string, newPassword: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${id}/reset-password`, {
+      method: "POST",
+      body: { newPassword },
+    }),
+  deleteUser: (id: string) => request<void>(`/api/admin/users/${id}`, { method: "DELETE" }),
 };
 
 /* ------------------------------- brandkit --------------------------------- */

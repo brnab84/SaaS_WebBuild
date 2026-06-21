@@ -31,11 +31,12 @@ function rawGet(path: string, host: string): Promise<{ status: number; body: str
 // Shared state threaded through the sequential flow.
 const state: {
   accessToken: string;
+  userId: string;
   workspaceId: string;
   siteId: string;
   siteSlug: string;
   homePageId: string;
-} = { accessToken: "", workspaceId: "", siteId: "", siteSlug: "", homePageId: "" };
+} = { accessToken: "", userId: "", workspaceId: "", siteId: "", siteSlug: "", homePageId: "" };
 
 // Phase 3 e-commerce state threaded through its tests.
 const ecom = { productId: "", orderId: "" };
@@ -94,6 +95,7 @@ describe("WebForge API end-to-end (Phase 1)", () => {
     expect(body.tokens.accessToken).toBeTruthy();
     expect(body.workspace.slug).toBe("ada-studio");
     state.accessToken = body.tokens.accessToken;
+    state.userId = body.user.id;
     state.workspaceId = body.workspace.id;
   });
 
@@ -491,6 +493,57 @@ describe("WebForge API end-to-end (Phase 1)", () => {
 
     const sites = await json<{ items: { slug: string }[] }>(await api("/api/admin/sites"));
     expect(sites.items.some((s) => s.slug === state.siteSlug)).toBe(true);
+  });
+
+  it("manages users: role, plan, password reset and deletion", async () => {
+    // A second tenant for the super-admin to manage.
+    const reg = await json<{ user: { id: string } }>(
+      await fetch(`${baseUrl}/api/auth/register`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "Bob", email: "bob@example.com", password: "bobsecret1" }),
+      }),
+    );
+    const bobId = reg.user.id;
+
+    // Promote + change plan.
+    const promoted = await json<{ role: string; plan: string }>(
+      await api(`/api/admin/users/${bobId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: "superadmin", plan: "pro" }),
+      }),
+    );
+    expect(promoted.role).toBe("superadmin");
+    expect(promoted.plan).toBe("pro");
+
+    // Admin can't demote itself.
+    const self = await api(`/api/admin/users/${state.userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role: "user" }),
+    });
+    expect(self.status).toBe(400);
+
+    // Force-reset Bob's password; the new one logs in.
+    const reset = await api(`/api/admin/users/${bobId}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify({ newPassword: "forcedpass1" }),
+    });
+    expect(reset.status).toBe(200);
+    const bobLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "bob@example.com", password: "forcedpass1" }),
+    });
+    expect(bobLogin.status).toBe(200);
+
+    // Delete Bob (and his workspace cascade).
+    const del = await api(`/api/admin/users/${bobId}`, { method: "DELETE" });
+    expect(del.status).toBe(204);
+    expect(await User.findById(bobId)).toBeNull();
+
+    // Admin can't delete itself.
+    const selfDel = await api(`/api/admin/users/${state.userId}`, { method: "DELETE" });
+    expect(selfDel.status).toBe(400);
   });
 
   /* --------------------------- password flows -------------------------- */

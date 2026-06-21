@@ -8,6 +8,7 @@ import type {
 } from "@webforge/shared";
 import { adminApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
+import { confirmDialog, promptDialog } from "../store/dialog.js";
 
 const STAT_LABELS: { key: keyof AdminStats; label: string }[] = [
   { key: "users", label: "Users" },
@@ -55,10 +56,63 @@ export function AdminPage() {
   if (user && user.role !== "superadmin") return <Navigate to="/" replace />;
 
   async function deleteSite(s: AdminSiteRow) {
-    if (window.confirm(`Delete site "${s.name}" (/${s.slug})? This removes it for the tenant.`)) {
+    const ok = await confirmDialog({
+      title: `Delete site "${s.name}"?`,
+      message: `/${s.slug} — this removes it for the tenant.`,
+      confirmLabel: "Delete site",
+      danger: true,
+    });
+    if (ok) {
       await adminApi.deleteSite(s.id);
       void refresh();
     }
+  }
+
+  async function toggleRole(u: AdminUserRow) {
+    const promoting = u.role !== "superadmin";
+    const ok = await confirmDialog({
+      title: promoting ? `Make ${u.email} a super-admin?` : `Remove super-admin from ${u.email}?`,
+      message: promoting
+        ? "They'll get full platform access."
+        : "They'll lose platform admin access.",
+      confirmLabel: promoting ? "Promote" : "Demote",
+      danger: !promoting,
+    });
+    if (!ok) return;
+    await adminApi.updateUser(u.id, { role: promoting ? "superadmin" : "user" });
+    void refresh();
+  }
+
+  async function changePlan(u: AdminUserRow, plan: string) {
+    await adminApi.updateUser(u.id, { plan: plan as "free" | "pro" | "business" });
+    void refresh();
+  }
+
+  async function resetUserPassword(u: AdminUserRow) {
+    const pwd = await promptDialog({
+      title: `Reset password for ${u.email}`,
+      message: "Set a temporary password (min 8 chars). Their sessions are logged out.",
+      placeholder: "New password",
+      confirmLabel: "Set password",
+    });
+    if (!pwd) return;
+    if (pwd.length < 8) {
+      await confirmDialog({ title: "Too short", message: "Password must be at least 8 characters.", confirmLabel: "OK", cancelLabel: "Close" });
+      return;
+    }
+    await adminApi.resetUserPassword(u.id, pwd);
+  }
+
+  async function deleteUser(u: AdminUserRow) {
+    const ok = await confirmDialog({
+      title: `Delete ${u.email}?`,
+      message: "Their workspaces, sites and all related data are permanently removed.",
+      confirmLabel: "Delete user",
+      danger: true,
+    });
+    if (!ok) return;
+    await adminApi.deleteUser(u.id);
+    void refresh();
   }
 
   const th = "px-4 py-2 text-left text-xs uppercase text-slate-400";
@@ -171,21 +225,61 @@ export function AdminPage() {
                       <th className={th}>Email</th>
                       <th className={th}>Plan</th>
                       <th className={th}>Role</th>
+                      <th className={`${th} text-right`}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((u) => (
-                      <tr key={u.id} className="border-t border-slate-100">
-                        <td className={`${td} font-medium text-slate-800`}>{u.name}</td>
-                        <td className={`${td} text-slate-500`}>{u.email}</td>
-                        <td className={td}>{u.plan}</td>
-                        <td className={td}>
-                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${u.role === "superadmin" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
-                            {u.role}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {users.map((u) => {
+                      const isSelf = u.id === user?.id;
+                      return (
+                        <tr key={u.id} className="border-t border-slate-100">
+                          <td className={`${td} font-medium text-slate-800`}>
+                            {u.name}
+                            {isSelf && <span className="ml-1 text-[11px] text-slate-400">(you)</span>}
+                          </td>
+                          <td className={`${td} text-slate-500`}>{u.email}</td>
+                          <td className={td}>
+                            <select
+                              value={u.plan}
+                              onChange={(e) => changePlan(u, e.target.value)}
+                              className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs text-slate-600 focus:border-indigo-500 focus:outline-none"
+                            >
+                              <option value="free">free</option>
+                              <option value="pro">pro</option>
+                              <option value="business">business</option>
+                            </select>
+                          </td>
+                          <td className={td}>
+                            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${u.role === "superadmin" ? "bg-violet-100 text-violet-700" : "bg-slate-100 text-slate-500"}`}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className={`${td} text-right`}>
+                            <div className="flex items-center justify-end gap-3 text-xs">
+                              <button
+                                onClick={() => toggleRole(u)}
+                                disabled={isSelf && u.role === "superadmin"}
+                                className="text-violet-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-300"
+                                title={isSelf && u.role === "superadmin" ? "You can't demote yourself" : undefined}
+                              >
+                                {u.role === "superadmin" ? "Demote" : "Promote"}
+                              </button>
+                              <button onClick={() => resetUserPassword(u)} className="text-slate-500 hover:text-slate-800">
+                                Reset pw
+                              </button>
+                              <button
+                                onClick={() => deleteUser(u)}
+                                disabled={isSelf}
+                                className="text-slate-400 hover:text-rose-600 disabled:cursor-not-allowed disabled:text-slate-300"
+                                title={isSelf ? "You can't delete your own account" : undefined}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

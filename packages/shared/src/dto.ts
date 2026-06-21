@@ -396,3 +396,20 @@ export interface AdminSiteRow {
   workspace: string;
   createdAt: string;
 }
+
+/** Platform admin: change a user's role and/or plan. At least one is required. */
+export const adminUpdateUserSchema = z
+  .object({
+    role: z.enum(["user", "superadmin"]).optional(),
+    plan: z.enum(["free", "pro", "business"]).optional(),
+  })
+  .refine((v) => v.role !== undefined || v.plan !== undefined, {
+    message: "Provide role and/or plan to update",
+  });
+export type AdminUpdateUserInput = z.infer<typeof adminUpdateUserSchema>;
+
+/** Platform admin: force-set a user's password (invalidates their sessions). */
+export const adminResetUserPasswordSchema = z.object({
+  newPassword: z.string().min(8).max(200),
+});
+export type AdminResetUserPasswordInput = z.infer<typeof adminResetUserPasswordSchema>;

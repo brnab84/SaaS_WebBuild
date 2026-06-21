@@ -1,11 +1,16 @@
+import bcrypt from "bcryptjs";
 import type {
+  AdminResetUserPasswordInput,
   AdminSiteRow,
   AdminStats,
+  AdminUpdateUserInput,
   AdminUserRow,
   AdminWorkspaceRow,
   Paginated,
   PaginationQuery,
 } from "@webforge/shared";
+import { Asset } from "../models/Asset.js";
+import { BrandKit } from "../models/BrandKit.js";
 import { Event } from "../models/Event.js";
 import { FormSubmission } from "../models/FormSubmission.js";
 import { Order } from "../models/Order.js";
@@ -14,7 +19,27 @@ import { Product } from "../models/Product.js";
 import { Site } from "../models/Site.js";
 import { User } from "../models/User.js";
 import { Workspace } from "../models/Workspace.js";
-import { notFound } from "../utils/http-error.js";
+import { badRequest, notFound } from "../utils/http-error.js";
+
+const BCRYPT_ROUNDS = 12;
+
+function toUserRow(u: {
+  _id: { toString(): string };
+  name: string;
+  email: string;
+  plan: string;
+  role: AdminUserRow["role"];
+  createdAt: Date;
+}): AdminUserRow {
+  return {
+    id: u._id.toString(),
+    name: u.name,
+    email: u.email,
+    plan: u.plan,
+    role: u.role,
+    createdAt: u.createdAt.toISOString(),
+  };
+}
 
 function paginate<T>(items: T[], total: number, q: PaginationQuery): Paginated<T> {
   return {
@@ -50,15 +75,7 @@ export async function listAllUsers(q: PaginationQuery): Promise<Paginated<AdminU
       .limit(q.limit),
     User.countDocuments(),
   ]);
-  const items = docs.map((u) => ({
-    id: u._id.toString(),
-    name: u.name,
-    email: u.email,
-    plan: u.plan,
-    role: u.role,
-    createdAt: u.createdAt.toISOString(),
-  }));
-  return paginate(items, total, q);
+  return paginate(docs.map(toUserRow), total, q);
 }
 
 export async function listAllWorkspaces(
@@ -118,4 +135,82 @@ export async function deleteAnySite(siteId: string): Promise<void> {
   if (!site) throw notFound("Site not found");
   await Page.deleteMany({ site: site._id });
   await site.deleteOne();
+}
+
+/* ----------------------------- user management ---------------------------- */
+
+/** Change a user's platform role and/or plan. A super-admin can't demote itself. */
+export async function updateUser(
+  actingUserId: string,
+  targetUserId: string,
+  input: AdminUpdateUserInput,
+): Promise<AdminUserRow> {
+  const user = await User.findById(targetUserId);
+  if (!user) throw notFound("User not found");
+
+  if (
+    input.role === "user" &&
+    user.role === "superadmin" &&
+    actingUserId === targetUserId
+  ) {
+    throw badRequest("You can't remove your own super-admin role.");
+  }
+
+  if (input.role !== undefined) user.role = input.role;
+  if (input.plan !== undefined) user.plan = input.plan;
+  await user.save();
+  return toUserRow(user);
+}
+
+/** Force-set a user's password (e.g. account recovery) and log them out everywhere. */
+export async function resetUserPassword(
+  targetUserId: string,
+  input: AdminResetUserPasswordInput,
+): Promise<void> {
+  const user = await User.findById(targetUserId);
+  if (!user) throw notFound("User not found");
+  user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
+  user.tokenVersion += 1; // invalidate outstanding sessions
+  await user.save();
+}
+
+/** Delete every tenant resource owned by a workspace, then the workspace itself. */
+async function deleteWorkspaceCascade(workspaceId: { toString(): string }): Promise<void> {
+  const sites = await Site.find({ workspace: workspaceId }).select("_id");
+  const siteIds = sites.map((s) => s._id);
+  await Promise.all([
+    Page.deleteMany({ site: { $in: siteIds } }),
+    Product.deleteMany({ workspace: workspaceId }),
+    Order.deleteMany({ workspace: workspaceId }),
+    Event.deleteMany({ workspace: workspaceId }),
+    FormSubmission.deleteMany({ workspace: workspaceId }),
+    Asset.deleteMany({ workspace: workspaceId }),
+    BrandKit.deleteMany({ workspace: workspaceId }),
+  ]);
+  await Site.deleteMany({ workspace: workspaceId });
+  await Workspace.deleteOne({ _id: workspaceId });
+}
+
+/**
+ * Delete a user and everything they own. Workspaces they own are cascade-deleted;
+ * they're also removed as a member from any other workspaces. A super-admin can't
+ * delete its own account (to avoid locking the platform out).
+ */
+export async function deleteUser(actingUserId: string, targetUserId: string): Promise<void> {
+  if (actingUserId === targetUserId) {
+    throw badRequest("You can't delete your own account here.");
+  }
+  const user = await User.findById(targetUserId);
+  if (!user) throw notFound("User not found");
+
+  const owned = await Workspace.find({ owner: user._id }).select("_id");
+  for (const ws of owned) await deleteWorkspaceCascade(ws._id);
+
+  // Drop the user from any workspaces where they're a non-owner member.
+  await Workspace.updateMany(
+    { "members.user": user._id },
+    { $pull: { members: { user: user._id } } },
+  );
+
+  await user.deleteOne();
 }
