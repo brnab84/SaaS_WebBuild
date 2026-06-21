@@ -6,6 +6,7 @@ import { useAuthStore } from "../store/auth.js";
 import { GenerateSiteModal } from "../components/GenerateSiteModal.js";
 import { CreateSiteModal } from "../components/CreateSiteModal.js";
 import { ChangePasswordModal } from "../components/ChangePasswordModal.js";
+import { confirmDialog } from "../store/dialog.js";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -36,7 +37,13 @@ export function DashboardPage() {
   }, [workspace?.id]);
 
   async function removeSite(site: SiteDTO) {
-    if (!window.confirm(`Delete "${site.name}"? This cannot be undone.`)) return;
+    const ok = await confirmDialog({
+      title: `Delete "${site.name}"?`,
+      message: "This cannot be undone.",
+      confirmLabel: "Delete site",
+      danger: true,
+    });
+    if (!ok) return;
     await siteApi.remove(site.id);
     void refresh();
   }

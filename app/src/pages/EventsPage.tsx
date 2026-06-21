@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { EventDTO, FormSubmissionDTO } from "@webforge/shared";
 import { ApiError, eventApi, storefrontApi, submissionApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
+import { confirmDialog } from "../store/dialog.js";
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -86,7 +87,12 @@ export function EventsPage() {
   }
 
   async function removeEvent(ev: EventDTO) {
-    if (window.confirm(`Delete event "${ev.title}"?`)) {
+    const ok = await confirmDialog({
+      title: `Delete event "${ev.title}"?`,
+      confirmLabel: "Delete event",
+      danger: true,
+    });
+    if (ok) {
       await eventApi.remove(ev.id);
       void refresh();
     }

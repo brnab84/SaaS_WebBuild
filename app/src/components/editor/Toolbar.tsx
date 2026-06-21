@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { exportSite, siteApi } from "../../lib/api.js";
 import { useEditorStore, type Breakpoint, type SaveStatus } from "../../store/editor.js";
+import { confirmDialog, promptDialog } from "../../store/dialog.js";
 
 const BREAKPOINTS: { id: Breakpoint; label: string; icon: string }[] = [
   { id: "desktop", label: "Desktop", icon: "🖥" },
@@ -74,10 +75,13 @@ export function Toolbar() {
 
   async function setDomain() {
     if (!site) return;
-    const next = window.prompt(
-      "Custom domain (e.g. shop.example.com) — leave blank to remove",
-      site.customDomain ?? "",
-    );
+    const next = await promptDialog({
+      title: "Custom domain",
+      message: "e.g. shop.example.com — leave blank to remove.",
+      placeholder: "shop.example.com",
+      initialValue: site.customDomain ?? "",
+      confirmLabel: "Save domain",
+    });
     if (next == null) return;
     try {
       const updated = await siteApi.update(site.id, {
@@ -85,7 +89,12 @@ export function Toolbar() {
       });
       setSite(updated);
     } catch {
-      window.alert("Could not update the domain (already in use or invalid).");
+      await confirmDialog({
+        title: "Couldn’t update the domain",
+        message: "It may already be in use or invalid.",
+        confirmLabel: "OK",
+        cancelLabel: "Close",
+      });
     }
   }
 

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import type { OrderDTO, ProductDTO, SiteDTO } from "@webforge/shared";
 import { ApiError, orderApi, productApi, siteApi, storefrontApi } from "../lib/api.js";
 import { useAuthStore } from "../store/auth.js";
+import { confirmDialog, promptDialog } from "../store/dialog.js";
 
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency }).format(cents / 100);
@@ -77,7 +78,13 @@ export function StorePage() {
     void refresh();
   }
   async function editPrice(p: ProductDTO) {
-    const next = window.prompt(`New price for "${p.title}" (${p.currency})`, (p.priceCents / 100).toFixed(2));
+    const next = await promptDialog({
+      title: "Update price",
+      message: `New price for "${p.title}" (${p.currency})`,
+      initialValue: (p.priceCents / 100).toFixed(2),
+      numeric: true,
+      confirmLabel: "Save price",
+    });
     if (next == null) return;
     const cents = Math.round(parseFloat(next) * 100);
     if (Number.isFinite(cents) && cents >= 0) {
@@ -86,7 +93,12 @@ export function StorePage() {
     }
   }
   async function removeProduct(p: ProductDTO) {
-    if (window.confirm(`Delete "${p.title}"?`)) {
+    const ok = await confirmDialog({
+      title: `Delete "${p.title}"?`,
+      confirmLabel: "Delete product",
+      danger: true,
+    });
+    if (ok) {
       await productApi.remove(p.id);
       void refresh();
     }

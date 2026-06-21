@@ -7,6 +7,7 @@ import { StorePage } from "./pages/StorePage.js";
 import { EventsPage } from "./pages/EventsPage.js";
 import { AdminPage } from "./pages/AdminPage.js";
 import { ForgotPasswordPage, ResetPasswordPage } from "./pages/PasswordPages.js";
+import { DialogHost } from "./components/ui/DialogHost.js";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -17,7 +18,8 @@ export function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <AuthPage mode="login" />}
@@ -69,6 +71,8 @@ export function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      <DialogHost />
+    </>
   );
 }

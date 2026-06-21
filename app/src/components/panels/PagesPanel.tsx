@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { PageDTO } from "@webforge/shared";
 import { useEditorStore } from "../../store/editor.js";
+import { confirmDialog, promptDialog } from "../../store/dialog.js";
 
 function PageRow({ p }: { p: PageDTO }) {
   const page = useEditorStore((s) => s.page);
@@ -11,12 +12,22 @@ function PageRow({ p }: { p: PageDTO }) {
 
   async function rename(e: React.MouseEvent) {
     e.stopPropagation();
-    const title = window.prompt("Rename page", p.title);
+    const title = await promptDialog({
+      title: "Rename page",
+      initialValue: p.title,
+      placeholder: "Page title",
+      confirmLabel: "Rename",
+    });
     if (title && title.trim()) await renamePage(p.id, title.trim());
   }
   async function remove(e: React.MouseEvent) {
     e.stopPropagation();
-    if (window.confirm(`Delete page "${p.title}"?`)) await removePage(p.id);
+    const ok = await confirmDialog({
+      title: `Delete page "${p.title}"?`,
+      confirmLabel: "Delete page",
+      danger: true,
+    });
+    if (ok) await removePage(p.id);
   }
 
   return (
@@ -49,7 +60,11 @@ export function PagesPanel() {
   const [adding, setAdding] = useState(false);
 
   async function handleAdd() {
-    const title = window.prompt("New page title");
+    const title = await promptDialog({
+      title: "New page",
+      placeholder: "Page title",
+      confirmLabel: "Add page",
+    });
     if (!title) return;
     setAdding(true);
     try {
