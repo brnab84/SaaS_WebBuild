@@ -50,8 +50,10 @@ Per-package typecheck: `npm run typecheck --workspace @webforge/<pkg>` (or `npx 
 - **Multi-tenancy:** access is gated by workspace membership via
   `requireWorkspace` / `requireSite` (`services/access.service.ts`). Never query a tenant
   resource without an access check.
-- **Migration seams:** `PublishService` and `StorageService` are interfaces with local
-  implementations selected by env. Keep all publish/storage specifics behind them.
+- **Migration seams:** `PublishService`, `StorageService`, `PaymentService` and
+  `EmailService` are interfaces with local/no-credential implementations selected by env
+  (`EMAIL_DRIVER=log` prints to the log; `resend` sends for real). Keep all
+  publish/storage/payment/email specifics behind them.
 - **Renderer is pure & escapes everything** — user strings go through `escape*` / `safeUrl`.
   Keep it free of DB/Express imports so it stays unit-testable and reusable for export.
 
@@ -85,3 +87,12 @@ All five phases are implemented: 1 (MVP), 2 (AI generation + logo maker), 3 (e-c
 
 There are no further planned phases — the product is feature-complete per the original
 brief. New work is enhancement/maintenance.
+
+**Post-launch enhancements (live):** visual canvas blocks for products/events/forms
+(dynamic data injected via `hydrate.service.ts` before render); authenticated password
+change + email-backed forgot/reset (signed `typ:"reset"` JWTs); order/RSVP/form
+notifications via `EmailService`; platform **super-admin** area (`/api/admin/*`, `/admin`)
+incl. user management (role/plan/password-reset/delete with self-protection); a
+promise-based confirm/prompt dialog (`app/src/store/dialog.ts` + `DialogHost`) replacing
+`window.prompt`/`confirm` (suppressed in embedded contexts); a tailored helmet CSP and
+Open Graph/Twitter SEO meta in the renderer.
